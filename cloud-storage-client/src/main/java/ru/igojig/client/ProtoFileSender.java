@@ -17,31 +17,33 @@ public class ProtoFileSender {
     public static void sendFile(Path path, Channel channel, ChannelFutureListener finishListener) throws IOException {
         FileRegion region = new DefaultFileRegion(path.toFile(), 0, Files.size(path));
 
+
         ByteBuf buf = null;
+
         buf = ByteBufAllocator.DEFAULT.directBuffer(1);
+        // пишем байт заголовка
         buf.writeByte((byte) Header.FILE.getHeader());
-        channel.writeAndFlush(buf);
-//        channel.pipeline().writeAndFlush(buf);
+        channel.write(buf);
 
 
         byte[] filenameBytes = path.getFileName().toString().getBytes(StandardCharsets.UTF_8);
         buf = ByteBufAllocator.DEFAULT.directBuffer(4);
+        // пишем длину имени файла
         buf.writeInt(filenameBytes.length);
-        channel.writeAndFlush(buf);
-//        channel.pipeline().writeAndFlush(buf);
+        channel.write(buf);
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(filenameBytes.length);
+        // пишем имя файла
         buf.writeBytes(filenameBytes);
-        channel.writeAndFlush(buf);
-//        channel.pipeline().writeAndFlush(buf);
+        channel.write(buf);
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(8);
+        // пишем длину самого файла
         buf.writeLong(Files.size(path));
-        channel.writeAndFlush(buf);
-//        channel.pipeline().writeAndFlush(buf);
+        channel.write(buf);
 
+        // пишем сам файл
         ChannelFuture transferOperationFuture = channel.writeAndFlush(region);
-//        ChannelFuture transferOperationFuture = channel.pipeline().writeAndFlush(region);
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
         }

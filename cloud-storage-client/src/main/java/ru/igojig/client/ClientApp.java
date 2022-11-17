@@ -5,6 +5,8 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import ru.igojig.common.callback.CloudCallback;
+import ru.igojig.client.controller.ClientController;
 import ru.igojig.client.handlers.ClientInHandler;
 
 import java.io.IOException;
@@ -20,40 +22,43 @@ public class ClientApp extends  Application {
       Map<String, CloudCallback> cloudCallbackMap=new HashMap<>();
 
 
-     CountDownLatch countDownLatch=new CountDownLatch(1);
 
     @Override
     public void stop() throws Exception {
-
+        Network.getInstance().stop();
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-
-
-
         FXMLLoader fxmlLoader = new FXMLLoader(ClientApp.class.getResource("client.fxml"));
-
-        Scene scene = new Scene(fxmlLoader.load(), 800, 600);
-        clientController=fxmlLoader.getController();
-
-
-        setCallbacks();
-
-
+        Scene scene = new Scene(fxmlLoader.load(), 800, 700);
         primaryStage.setTitle("Hello!");
         primaryStage.setScene(scene);
-
-
-
         primaryStage.show();
+
+        clientController=fxmlLoader.getController();
+        setCallbacks();
+        // запрашиваем список файлов с сервера при открытии окна
+        clientController.onBtnServerUpdate(null);
     }
 
     private void setCallbacks() {
+        cloudCallbackMap.put("GET_FILE", o->Platform.runLater(()->clientController.updateClientFileList()));
+
         cloudCallbackMap.put("GET_FILE_LIST", obj -> {
-            Platform.runLater(()->clientController.updateServerFileList(((List<String>)obj[0])));
+            Platform.runLater(()->{clientController.updateServerFileList(((List<String>)obj[0]));
+//                clientController.enableButtons();
+                });
             });
+
+        cloudCallbackMap.put("PROGRESS_BAR", new CloudCallback() {
+            @Override
+            public void callback(Object... obj) {
+
+                clientController.updateProgressBar((Double) obj[0]);
+            }
+        });
 
         Network.getInstance().getCurrentChannel().pipeline().get(ClientInHandler.class).setCloudCallbackMap(cloudCallbackMap);
     }

@@ -23,7 +23,7 @@ public class ServerApp  {
                     .childHandler(new ChannelInitializer<SocketChannel>() { // (4)
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(  new ServeкFirstInHandler());
+                            ch.pipeline().addLast(  new ServerFirstInHandler());
                         }
                     });
             // .childOption(ChannelOption.SO_KEEPALIVE, true);

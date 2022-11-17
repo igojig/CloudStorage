@@ -26,7 +26,7 @@ public class Network {
     private Network() {
     }
 
-    private Channel currentChannel;
+    private  Channel currentChannel;
 
     public Channel getCurrentChannel() {
         return currentChannel;

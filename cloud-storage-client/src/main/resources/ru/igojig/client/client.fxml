@@ -7,67 +7,75 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="832.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.igojig.client.ClientController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="663.0" prefWidth="832.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.igojig.client.controller.ClientController">
    <top>
        <MenuBar BorderPane.alignment="CENTER">
            <Menu mnemonicParsing="false" text="File">
                <items>
-                   <MenuItem mnemonicParsing="false" text="Close"/>
+                   <MenuItem mnemonicParsing="false" text="Close" />
                </items>
            </Menu>
            <Menu mnemonicParsing="false" text="Edit">
                <items>
-                   <MenuItem mnemonicParsing="false" text="Delete"/>
+                   <MenuItem mnemonicParsing="false" text="Delete" />
                </items>
            </Menu>
            <Menu mnemonicParsing="false" text="Help">
                <items>
-                   <MenuItem mnemonicParsing="false" text="About"/>
+                   <MenuItem mnemonicParsing="false" text="About" />
                </items>
            </Menu>
        </MenuBar>
    </top>
    <center>
-      <VBox alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" spacing="10.0" BorderPane.alignment="CENTER">
-         <children>
-            <Pane prefHeight="185.0" prefWidth="128.0" />
-            <Button alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" text="send to Server -&gt;" visible="false" />
-            <Button contentDisplay="CENTER" mnemonicParsing="false" text="&lt;- send to Client" visible="false" />
-            <Separator prefWidth="200.0" />
-            <Button fx:id="btnRefresh" mnemonicParsing="false" onAction="#onBtnRefresh" text="Update Server list" />
-         </children>
-         <padding>
-            <Insets top="10.0" />
-         </padding>
-         <BorderPane.margin>
-            <Insets />
-         </BorderPane.margin>
-      </VBox>
+       <VBox alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" spacing="10.0" BorderPane.alignment="CENTER">
+           <padding>
+               <Insets top="10.0" />
+           </padding>
+           <BorderPane.margin>
+               <Insets />
+           </BorderPane.margin>
+           <Pane prefHeight="185.0" prefWidth="128.0" />
+           <Button fx:id="btnSendToServer" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onSendToServer" text="send to Server -&gt;" />
+           <Button fx:id="btnSendToClient" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onSendToClient" text="&lt;- send to Client" />
+           <Separator prefWidth="200.0" />
+         <ProgressBar fx:id="progressBar" prefWidth="200.0" progress="0.01">
+            <VBox.margin>
+               <Insets left="5.0" right="5.0" />
+            </VBox.margin>
+         </ProgressBar>
+       </VBox>
    </center>
-   <bottom>
-      <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-        <items>
-          <Button mnemonicParsing="false" text="Button" />
-        </items>
-      </ToolBar>
-   </bottom>
    <left>
-      <VBox prefHeight="735.0" prefWidth="336.0" BorderPane.alignment="CENTER">
-         <children>
-            <ToolBar prefHeight="30.0" prefWidth="336.0">
-               <items>
+       <VBox prefHeight="735.0" prefWidth="336.0" BorderPane.alignment="CENTER">
+           <ToolBar prefHeight="30.0" prefWidth="336.0">
+              <items>
                   <Label prefHeight="17.0" prefWidth="34.0" text="Client:" />
-               </items>
-            </ToolBar>
-            <ListView fx:id="lstClient" prefHeight="695.0" prefWidth="329.0" VBox.vgrow="ALWAYS" />
-         </children>
-      </VBox>
+               <Label fx:id="lblClientCount" />
+              </items>
+           </ToolBar>
+           <ListView fx:id="lstClient" prefHeight="557.0" prefWidth="336.0" VBox.vgrow="ALWAYS">
+            <VBox.margin>
+               <Insets left="5.0" />
+            </VBox.margin></ListView>
+           <HBox prefHeight="27.0" prefWidth="336.0" spacing="5.0" VBox.vgrow="ALWAYS">
+            <children>
+               <Button fx:id="btnClientUpdate" mnemonicParsing="false" onAction="#onBtnClientUpdate" text="Update" />
+               <Button fx:id="btnClientRename" mnemonicParsing="false" onAction="#onClientRename" text="Rename" />
+               <Button fx:id="btnClientDelete" mnemonicParsing="false" onAction="#onClientDelete" text="Delete" />
+            </children>
+            <padding>
+               <Insets left="5.0" top="5.0" />
+            </padding></HBox>
+       </VBox>
    </left>
    <right>
       <VBox prefHeight="735.0" prefWidth="368.0" BorderPane.alignment="CENTER">
@@ -75,9 +83,23 @@
             <ToolBar prefHeight="30.0" prefWidth="368.0">
                <items>
                   <Label text="Server:" />
+                  <Label fx:id="lblServerCount" />
                </items>
             </ToolBar>
-            <ListView fx:id="lstServer" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+            <ListView fx:id="lstServer" prefHeight="556.0" prefWidth="368.0" VBox.vgrow="ALWAYS">
+               <VBox.margin>
+                  <Insets right="5.0" />
+               </VBox.margin></ListView>
+            <HBox prefHeight="34.0" prefWidth="368.0" spacing="5.0" VBox.vgrow="ALWAYS">
+               <children>
+                  <Button fx:id="btnServerUpdate" mnemonicParsing="false" onAction="#onBtnServerUpdate" text="Update" />
+                  <Button fx:id="btnServerRename" mnemonicParsing="false" onAction="#onServerRename" text="Rename" />
+                  <Button fx:id="btnServerDelete" mnemonicParsing="false" onAction="#onServerDelete" text="Delete" />
+               </children>
+               <padding>
+                  <Insets left="5.0" top="5.0" />
+               </padding>
+            </HBox>
          </children>
       </VBox>
    </right>

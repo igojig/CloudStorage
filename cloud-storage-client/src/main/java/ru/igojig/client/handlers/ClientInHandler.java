@@ -3,15 +3,19 @@ package ru.igojig.client.handlers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import ru.igojig.client.CloudCallback;
+import ru.igojig.common.callback.CloudCallback;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
 import ru.igojig.common.CloudUtil;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +29,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
     private long receivedFileLength;
     private String fileName;
     private BufferedOutputStream out;
+
+    Path rootPath=Path.of(".", "client_repository");
 
     public void setCloudCallbackMap(Map<String, CloudCallback> map) {
         this.cloudCallbackMap = map;
@@ -58,6 +64,84 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                 }
             }
 
+            if (currentState == HandlerState.FILE_NAME_LENGTH) {
+                // ждем длину имени файла
+                if (buf.readableBytes() >= 4) {
+                    nextLength = buf.readInt();
+                    currentState = HandlerState.FILE_NAME;
+                }
+            }
+
+            if (currentState == HandlerState.FILE_NAME) {
+                // ждем имя файла
+                if (buf.readableBytes() >= nextLength) {
+                    byte[] bytes = new byte[nextLength];
+                    buf.readBytes(bytes);
+                    fileName = new String(bytes, StandardCharsets.UTF_8);
+//                    System.out.println(fileName);
+//                    Path path = Path.of(".", "client_repository", fileName);
+                    Path path=rootPath.resolve(fileName);
+                    if (Files.exists(path)) {
+                        Files.delete(path);
+                    }
+                    File file = path.toFile();
+                    out = new BufferedOutputStream(new FileOutputStream(file));
+                    currentState = HandlerState.FILE_LENGTH;
+                }
+            }
+
+            if (currentState == HandlerState.FILE_LENGTH) {
+                // ждем длину файла
+                if (buf.readableBytes() >= 8) {
+                    fileLength = buf.readLong();
+                    currentState = HandlerState.FILE;
+                    receivedFileLength = 0L;
+                }
+            }
+
+            if (currentState == HandlerState.FILE) {
+                // ждем файл
+                if (fileLength == 0) {
+                    System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
+                    currentState = HandlerState.IDLE;
+                    out.close();
+
+                    // обновляем список файлов на клиенте
+                    cloudCallbackMap.get("GET_FILE").callback(null);
+                } else {
+
+                    while (buf.readableBytes() > 0) {
+                        byte readed = buf.readByte();
+                        out.write(readed);
+                        receivedFileLength++;
+
+                        cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
+                        if (receivedFileLength == fileLength) {
+                            cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
+                            System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
+                            currentState = HandlerState.IDLE;
+                            out.close();
+
+                            // обновляем список файлов на клиенте
+                            cloudCallbackMap.get("GET_FILE").callback(null);
+
+                            // получили файл
+                            // передаем клиенту список файлов
+                            CloudUtil.sendFileListInDir(rootPath, ctx.channel(), f -> {
+                                if (!f.isSuccess()) {
+                                    f.cause().printStackTrace();
+                                }
+                                if (f.isSuccess()) {
+                                    System.out.println("Список файлов успешно передан на сервер");
+                                }
+                            });
+
+                            break;
+                        }
+                    }
+                }
+            }
+
             //-----------------------------------------------------------
             if (currentState == HandlerState.FILE_LIST_LENGTH) {
                 // ждем список файлов от сервера
@@ -68,16 +152,26 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                 }
             }
 
+            // читаем список файлов
             if (currentState == HandlerState.FILE_LIST) {
                 if (buf.readableBytes() >= nextLength) {
                     byte[] bytes = new byte[nextLength];
                     buf.readBytes(bytes);
-                    String[] fileList = new String(bytes, StandardCharsets.UTF_8).strip().split(CloudUtil.STRING_DELIMITER);
-                    List<String> list = Arrays.stream(fileList).toList();
+                    String str = new String(bytes, StandardCharsets.UTF_8);
+                    List<String> fileList;
+                    // если список файлов пустой
+                    if (str.equals("")) {
+                        fileList = Collections.emptyList();
+                    } else {
+                        String[] fileString = str.split(CloudUtil.STRING_DELIMITER);
+                        fileList = Arrays.stream(fileString).toList();
+
+                    }
                     // ищем callback и вызываем его
-                    cloudCallbackMap.get("GET_FILE_LIST").callback(list);
+                    cloudCallbackMap.get("GET_FILE_LIST").callback(fileList);
+
                     System.out.println("Получили список файлов от сервера:");
-                    System.out.println(Arrays.toString(fileList));
+                    System.out.println(fileList);
                     currentState = HandlerState.IDLE;
                 }
             }
