@@ -3,6 +3,8 @@ package ru.igojig.common;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.*;
+import ru.igojig.common.callback.CloudCallback;
+import ru.igojig.common.callback.CountDown;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -10,15 +12,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CloudUtil {
 
+    private static final ExecutorService executorService= Executors.newSingleThreadExecutor();
+
+    private static CountDown callback;
+
     public static final String STRING_DELIMITER ="&";
     public static final String HOST="localhost";
     public static final int PORT=8189;
 
+    public static void setCallback(CountDown callback){
+        CloudUtil.callback = callback;
+    }
 
     public static List<String> getFileListInDir(Path path) {
         try (Stream<Path> stream = Files.list(path)) {
@@ -99,23 +110,16 @@ public class CloudUtil {
 
         // пишем сам файл
         ChannelFuture transferOperationFuture = channel.writeAndFlush(region);
+        if(callback!=null) {
+            executorService.execute(() -> {
 
-//        new Thread(()->{
-//            long t;
-//            while ((t=region.transferred())<region.count()){
-//                System.out.println("Position: " + region.position());
-//                System.out.println("Transferred: " + t);
-//                System.out.println("Count: " +region.count());
-//                try {
-//                    Thread.sleep(100);
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//            System.out.println("Position: " + region.position());
-//            System.out.println("Transferred: " + t);
-//            System.out.println("Count: " +region.count());
-//        }).start();
+                while (region.transferred() < region.count()) {
+                    callback.countDown(region.count(), region.transferred());
+                }
+                callback.countDown(1, 0);
+            });
+        }
+
 
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);

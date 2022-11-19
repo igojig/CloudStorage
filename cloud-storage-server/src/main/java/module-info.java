@@ -3,6 +3,6 @@ module cloud.storage.server {
 //    requires io.netty.buffer;
     requires cloud.storage.common;
     requires io.netty.all;
-
+    requires org.xerial.sqlitejdbc;
     exports ru.igojig.server;
 }

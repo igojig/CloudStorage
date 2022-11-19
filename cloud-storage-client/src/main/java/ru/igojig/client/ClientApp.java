@@ -5,6 +5,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import ru.igojig.common.CloudUtil;
 import ru.igojig.common.callback.CloudCallback;
 import ru.igojig.client.controller.ClientController;
 import ru.igojig.client.handlers.ClientInHandler;
@@ -33,7 +34,7 @@ public class ClientApp extends  Application {
 
         FXMLLoader fxmlLoader = new FXMLLoader(ClientApp.class.getResource("client.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 800, 700);
-        primaryStage.setTitle("Hello!");
+        primaryStage.setTitle("Network storage");
         primaryStage.setScene(scene);
         primaryStage.show();
 
@@ -41,6 +42,11 @@ public class ClientApp extends  Application {
         setCallbacks();
         // запрашиваем список файлов с сервера при открытии окна
         clientController.onBtnServerUpdate(null);
+
+        CloudUtil.setCallback((a, b)->{
+            clientController.updateProgressBar(b/a);
+        });
+
     }
 
     private void setCallbacks() {

@@ -145,7 +145,7 @@ public class ClientController implements Initializable {
 
     public void onSendToServer(ActionEvent actionEvent) throws IOException {
 
-        if(!checkClientFileIsSelected()){
+        if(checkClientFileIsSelected()){
             return;
         }
 
@@ -167,7 +167,7 @@ public class ClientController implements Initializable {
     }
 
     public void onSendToClient(ActionEvent actionEvent) {
-        if(!checkServerFileIsSelected()){
+        if(checkServerFileIsSelected()){
             return;
         }
         disableButtons();
@@ -183,7 +183,7 @@ public class ClientController implements Initializable {
     }
 
     public void onServerRename(ActionEvent actionEvent) {
-       if(!checkServerFileIsSelected()){
+       if(checkServerFileIsSelected()){
            return;
        }
 
@@ -215,7 +215,7 @@ public class ClientController implements Initializable {
     }
 
     public void onServerDelete(ActionEvent actionEvent) {
-        if(!checkServerFileIsSelected()){
+        if(checkServerFileIsSelected()){
             return;
         }
 
@@ -237,18 +237,18 @@ public class ClientController implements Initializable {
         if(selectedServerFile==null || selectedServerFile.equals("")){
             Alert a=new Alert(Alert.AlertType.ERROR, "Выберите файл");
             a.show();
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     public boolean checkClientFileIsSelected(){
         if(selectedClientFile==null || selectedClientFile.equals("")){
             Alert a=new Alert(Alert.AlertType.ERROR, "Выберите файл");
             a.show();
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     public void disableButtons(){
@@ -285,7 +285,7 @@ public class ClientController implements Initializable {
     }
 
     public void onClientRename(ActionEvent actionEvent) {
-        if(!checkClientFileIsSelected()){
+        if(checkClientFileIsSelected()){
             return;
         }
         disableButtons();
@@ -315,7 +315,7 @@ public class ClientController implements Initializable {
     }
 
     public void onClientDelete(ActionEvent actionEvent) {
-        if(!checkClientFileIsSelected()){
+        if(checkClientFileIsSelected()){
             return;
         }
         disableButtons();

@@ -18,8 +18,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientInHandler extends ChannelInboundHandlerAdapter {
+
+    ExecutorService executorService= Executors.newSingleThreadExecutor();
 
     private Map<String, CloudCallback> cloudCallbackMap;
 
@@ -96,6 +100,26 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     fileLength = buf.readLong();
                     currentState = HandlerState.FILE;
                     receivedFileLength = 0L;
+                    executorService.execute(()->{
+                        while (receivedFileLength<fileLength) {
+                            cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
+
+//                            try {
+//                                Thread.sleep(100);
+//                            } catch (InterruptedException e) {
+//                                throw new RuntimeException(e);
+//                            }
+                        }
+                        cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
+
+                    });
+//                    new Thread(()->{
+//                        while (receivedFileLength<fileLength) {
+//                            cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
+//                        }
+//                        cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
+//
+//                    }).start();
                 }
             }
 
@@ -109,15 +133,18 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     // обновляем список файлов на клиенте
                     cloudCallbackMap.get("GET_FILE").callback(null);
                 } else {
-
+//
                     while (buf.readableBytes() > 0) {
                         byte readed = buf.readByte();
+
                         out.write(readed);
                         receivedFileLength++;
 
-                        cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
+
+
+//                        cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
                         if (receivedFileLength == fileLength) {
-                            cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
+//                            cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
                             System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
                             currentState = HandlerState.IDLE;
                             out.close();
