@@ -3,6 +3,10 @@ package ru.igojig.common;
 public enum HandlerState {
     IDLE,
 
+    AUTH_LENGTH,
+    AUTH,
+
+
     // файл
     FILE_NAME_LENGTH,
     FILE_NAME,
@@ -20,7 +24,7 @@ public enum HandlerState {
     COMMAND_RENAME_LENGTH,
     COMMAND_RENAME,
 
-    COMMAND_GET_FILENAME_LENGHT,
+    COMMAND_GET_FILENAME_LENGTH,
     COMMAND_GET_FILENAME,
 
     COMMAND_DELETE_LENGTH,

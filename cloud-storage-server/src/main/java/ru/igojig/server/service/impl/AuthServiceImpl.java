@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public class AuthServiceImpl implements AuthService {
 
-    private String getUserByLoginAndPasswordSQL = "SELECT username FROM users WHERE login=? AND password=?";
+    private final String getUsernameByLoginAndPasswordSQL = "SELECT username FROM users WHERE login=? AND password=?";
     private Connection connection;
 
     public AuthServiceImpl() {
@@ -31,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
         connectionStr += databaseStr;
         try {
             connection = DriverManager.getConnection(connectionStr);
+            System.out.println("Объект Connection получен");
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -40,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Optional<String> getUsernameByLoginAndPassword(String login, String password) {
-        try( PreparedStatement ps= connection.prepareStatement(getUserByLoginAndPasswordSQL)){
+        try( PreparedStatement ps= connection.prepareStatement(getUsernameByLoginAndPasswordSQL)){
             ps.setString(1, login);
             ps.setString(2, password);
             try(ResultSet rs=ps.executeQuery()){

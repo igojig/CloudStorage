@@ -27,6 +27,7 @@ public class ClientApp extends  Application {
     @Override
     public void stop() throws Exception {
         Network.getInstance().stop();
+        CloudUtil.stopExecutors();
     }
 
     @Override
@@ -39,32 +40,37 @@ public class ClientApp extends  Application {
         primaryStage.show();
 
         clientController=fxmlLoader.getController();
+        // для InboundHandlerAdapter
         setCallbacks();
-        // запрашиваем список файлов с сервера при открытии окна
-        clientController.onBtnServerUpdate(null);
-
+        // для CloudUtils
         CloudUtil.setCallback((a, b)->{
-            clientController.updateProgressBar(b/a);
+            clientController.updateProgressBar(a, b); // received fileLength
         });
+        // запрашиваем список файлов с сервера при открытии окна
+//        clientController.onBtnServerUpdate(null);
+
+
 
     }
 
     private void setCallbacks() {
-        cloudCallbackMap.put("GET_FILE", o->Platform.runLater(()->clientController.updateClientFileList()));
+        cloudCallbackMap.put("GET_FILE", o->Platform.runLater(()->clientController.updateClientFileListWithFileInfo((String)o[0], (Long)o[1])));
 
         cloudCallbackMap.put("GET_FILE_LIST", obj -> {
             Platform.runLater(()->{clientController.updateServerFileList(((List<String>)obj[0]));
-//                clientController.enableButtons();
                 });
             });
 
-        cloudCallbackMap.put("PROGRESS_BAR", new CloudCallback() {
-            @Override
-            public void callback(Object... obj) {
-
-                clientController.updateProgressBar((Double) obj[0]);
-            }
+        cloudCallbackMap.put("AUTH_OK", o->{
+            Platform.runLater(()->clientController.onGetAuthOk((String)o[0]));
         });
+
+        cloudCallbackMap.put("AUTH_ERR", o->{
+           clientController.txtMessage.appendText("Ошибка авторизации");
+           clientController.txtMessage.appendText("\n");
+        });
+
+        cloudCallbackMap.put("PROGRESS_BAR", obj -> clientController.updateProgressBar((Double) obj[0], (Double)obj[1]));
 
         Network.getInstance().getCurrentChannel().pipeline().get(ClientInHandler.class).setCloudCallbackMap(cloudCallbackMap);
     }

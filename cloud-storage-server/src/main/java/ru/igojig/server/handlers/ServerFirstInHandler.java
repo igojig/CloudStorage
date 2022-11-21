@@ -1,4 +1,4 @@
-package ru.igojig.server;
+package ru.igojig.server.handlers;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -12,6 +12,7 @@ import ru.igojig.common.Header;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ import java.util.Arrays;
 
 public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
 
-
+    private final String username;
 
     private HandlerState currentState = HandlerState.IDLE;
     private int nextLength; // длина следующей получаемой части
@@ -31,6 +32,36 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
 
     Path rootPath=Path.of(".", "server_repository");
 
+    public ServerFirstInHandler(String username) {
+        this.username = username;
+        createUserDir(username);
+
+    }
+
+    private void createUserDir(String username) {
+        rootPath=rootPath.resolve(username);
+        if(!Files.exists(rootPath)){
+            try {
+                Files.createDirectory(rootPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Пользователь подключился: " + ctx);
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Пользователь " + username + " отключился" + ctx);
+        ctx.close();
+//        super.channelInactive(ctx);
+    }
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
@@ -38,7 +69,7 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
         while (buf.readableBytes() > 0) {
             if (currentState == HandlerState.IDLE) {
                 byte controlByte = buf.readByte();
-                // проверяем заголовок, иходя из него выставляем HandlerState
+                // проверяем заголовок, исходя из него выставляем HandlerState
                 if (controlByte == Header.FILE.getHeader()) {
                     // переходим в состояние получения файла
                     currentState = HandlerState.FILE_NAME_LENGTH;
@@ -144,7 +175,7 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
                     byte[] bytes=new byte[nextLength];
                     buf.readBytes(bytes);
                     String[] fileList=new String(bytes, StandardCharsets.UTF_8).split(CloudUtil.STRING_DELIMITER);
-                    System.out.println("Получили спискок файлов от клиента:");
+                    System.out.println("Получили список файлов от клиента:");
                     System.out.println(Arrays.toString(fileList));
                     currentState= HandlerState.IDLE;
                 }
@@ -169,7 +200,7 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
                     } else if(command==Command.GET_FILE.getCommand()){
                         // получили команду на запрос файла [длина_имени_файда][имя_файла]
                         System.out.println("Запрос от клиента: " + Command.GET_FILE);
-                        currentState=HandlerState.COMMAND_GET_FILENAME_LENGHT;
+                        currentState=HandlerState.COMMAND_GET_FILENAME_LENGTH;
                         nextLength=0;
 
                     }else if(command==Command.DELETE.getCommand()){
@@ -234,7 +265,7 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
                 }
             }
 
-            if(currentState==HandlerState.COMMAND_GET_FILENAME_LENGHT){
+            if(currentState==HandlerState.COMMAND_GET_FILENAME_LENGTH){
                 if(buf.readableBytes()>=4){
                     nextLength=buf.readInt();
                     currentState=HandlerState.COMMAND_GET_FILENAME;

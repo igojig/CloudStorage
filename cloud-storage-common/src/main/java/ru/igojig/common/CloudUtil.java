@@ -110,14 +110,16 @@ public class CloudUtil {
 
         // пишем сам файл
         ChannelFuture transferOperationFuture = channel.writeAndFlush(region);
+
         if(callback!=null) {
             executorService.execute(() -> {
 
                 while (region.transferred() < region.count()) {
-                    callback.countDown(region.count(), region.transferred());
+                    callback.countDown( (double) region.transferred(),(double) region.count());
                 }
-                callback.countDown(1, 0);
+                callback.countDown(0., 1.);
             });
+//            executorService.shutdown();
         }
 
 
@@ -185,5 +187,54 @@ public class CloudUtil {
             transferOperationFuture.addListener(finishListener);
         }
 
+    }
+
+    public static void sendAuth(String login, String password, Channel channel, ChannelFutureListener finishListener){
+        ByteBuf buf = null;
+        String authStr=login+STRING_DELIMITER+password;
+        byte[] authBytes=authStr.getBytes(StandardCharsets.UTF_8);
+
+        buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + authBytes.length);
+
+        buf.writeByte(Header.AUTH_REQUEST.getHeader());
+        buf.writeInt(authBytes.length);
+        buf.writeBytes(authBytes);
+
+        ChannelFuture transferOperationFuture  =channel.writeAndFlush(buf);
+        if (finishListener != null) {
+            transferOperationFuture.addListener(finishListener);
+        }
+
+    }
+
+    public static void sendAuthOk(String username, Channel channel,  ChannelFutureListener finishListener){
+        ByteBuf buf = null;
+        byte[] authOkBytes=username.getBytes(StandardCharsets.UTF_8);
+        buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + authOkBytes.length);
+
+        buf.writeByte(Header.AUTH_OK.getHeader());
+        buf.writeInt(authOkBytes.length);
+        buf.writeBytes(authOkBytes);
+
+        ChannelFuture transferOperationFuture  =channel.writeAndFlush(buf);
+        if (finishListener != null) {
+            transferOperationFuture.addListener(finishListener);
+        }
+    }
+
+    public static void sendAuthErr(Channel channel,  ChannelFutureListener finishListener){
+        ByteBuf buf = null;
+        buf = ByteBufAllocator.DEFAULT.directBuffer(1 );
+        buf.writeByte(Header.AUTH_ERR.getHeader());
+
+        ChannelFuture transferOperationFuture  =channel.writeAndFlush(buf);
+        if (finishListener != null) {
+            transferOperationFuture.addListener(finishListener);
+        }
+
+    }
+
+    public static void stopExecutors(){
+        executorService.shutdown();
     }
 }

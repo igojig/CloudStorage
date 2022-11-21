@@ -40,6 +40,13 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
         this.cloudCallbackMap = map;
     }
 
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Канал закрыт");
+        executorService.shutdown();
+    }
+
+
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -63,8 +70,32 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                 } else if (controlByte == Header.COMMAND.getHeader()) {
                     // переходим в состояние получения команды с сервера
                     currentState = HandlerState.COMMAND;
+                } else if(controlByte==Header.AUTH_ERR.getHeader()){
+                    // вызываем callback
+                    cloudCallbackMap.get("AUTH_ERR").callback(null);
+                }
+                else if (controlByte==Header.AUTH_OK.getHeader()) {
+                    currentState=HandlerState.AUTH_LENGTH;
+                    nextLength=0;
                 } else {
                     System.out.println("Неизвестный тип заголовка: " + controlByte);
+                }
+            }
+
+            if(currentState==HandlerState.AUTH_LENGTH){
+                if(buf.readableBytes()>=4){
+                    nextLength=buf.readInt();
+                    currentState=HandlerState.AUTH;
+                }
+            }
+
+            if(currentState==HandlerState.AUTH){
+                if(buf.readableBytes()>=nextLength){
+                    byte[] bytesStr=new byte[nextLength];
+                    buf.readBytes(bytesStr);
+                    String username=new String(bytesStr, StandardCharsets.UTF_8);
+                    cloudCallbackMap.get("AUTH_OK").callback(username);
+                    currentState=HandlerState.IDLE;
                 }
             }
 
@@ -100,9 +131,10 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     fileLength = buf.readLong();
                     currentState = HandlerState.FILE;
                     receivedFileLength = 0L;
+
                     executorService.execute(()->{
                         while (receivedFileLength<fileLength) {
-                            cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
+                            cloudCallbackMap.get("PROGRESS_BAR").callback( (double)receivedFileLength ,(double) fileLength);
 
 //                            try {
 //                                Thread.sleep(100);
@@ -110,9 +142,10 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 //                                throw new RuntimeException(e);
 //                            }
                         }
-                        cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
+                        cloudCallbackMap.get("PROGRESS_BAR").callback(0.,1.);
 
                     });
+//                    executorService.shutdown();
 //                    new Thread(()->{
 //                        while (receivedFileLength<fileLength) {
 //                            cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
@@ -131,7 +164,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     out.close();
 
                     // обновляем список файлов на клиенте
-                    cloudCallbackMap.get("GET_FILE").callback(null);
+                    cloudCallbackMap.get("GET_FILE").callback(fileName, fileLength);
                 } else {
 //
                     while (buf.readableBytes() > 0) {
@@ -150,7 +183,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                             out.close();
 
                             // обновляем список файлов на клиенте
-                            cloudCallbackMap.get("GET_FILE").callback(null);
+                            cloudCallbackMap.get("GET_FILE").callback(fileName, fileLength);
 
                             // получили файл
                             // передаем клиенту список файлов
@@ -206,57 +239,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
         }
 
-//
-//        if(inboundState == InboundState.IDLE){
-//            System.out.println("Что-то получили");
-//
-//
-//            if(buf.readableBytes()>0){
-//                int cmd=buf.readByte();
-//
-//                System.out.println("Команда: " + cmd);
-//                inboundState = InboundState.parse(cmd);
-//                System.out.println(inboundState);
-//                if(inboundState.isError()){
-//                    System.out.println("Unknown command");
-//                }
-//            }
-//
-//        }
-//
-//        // получили команду на отправку списка файлов
-//        if(inboundState==InboundState.FILE_LIST_REQUEST){
-//            File file=new File("client_repository");
-//            String[] filesInDir= file.list();
-//            StringBuilder sb=new StringBuilder();
-//            for(String s: filesInDir){
-//                sb.append(s).append(" ");
-//            }
-//            String str=sb.toString();
-//            byte[] bytes=str.getBytes(StandardCharsets.UTF_8);
-//            ByteBuf byteBuf=ByteBufAllocator.DEFAULT.directBuffer(1);
-//            //передаем длину массива
-//            byteBuf.writeByte((byte)bytes.length);
-//            ctx.write(byteBuf);
-//            byteBuf=ByteBufAllocator.DEFAULT.directBuffer(bytes.length);
-//            // передаем массив
-//            byteBuf.writeBytes(bytes);
-//            ctx.writeAndFlush(byteBuf);
-//
-//        }
-//
-//
-//
-//        if(inboundState == InboundState.FILE_LIST){
-//            ByteBuf byteBuf= ByteBufAllocator.DEFAULT.directBuffer(nextLen);
-//            if(buf.readableBytes()>=nextLen){
-//                byte[] bytes=new byte[nextLen];
-//                buf.readBytes(bytes);
-//                String str=new String(bytes, StandardCharsets.UTF_8);
-//                System.out.println(str);
-//                inboundState = InboundState.CMD;
-//            }
-//        }
+
 
         if (buf.readableBytes() == 0) {
             buf.release();

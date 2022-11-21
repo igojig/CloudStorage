@@ -9,13 +9,16 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="663.0" prefWidth="832.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.igojig.client.controller.ClientController">
+<BorderPane fx:id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="663.0" prefWidth="821.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.igojig.client.controller.ClientController">
    <top>
        <MenuBar BorderPane.alignment="CENTER">
            <Menu mnemonicParsing="false" text="File">
@@ -36,14 +39,18 @@
        </MenuBar>
    </top>
    <center>
-       <VBox alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" spacing="10.0" BorderPane.alignment="CENTER">
+       <VBox fx:id="vboxCenter" alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" spacing="10.0" BorderPane.alignment="CENTER">
            <padding>
                <Insets top="10.0" />
            </padding>
            <BorderPane.margin>
                <Insets />
            </BorderPane.margin>
-           <Pane prefHeight="185.0" prefWidth="128.0" />
+         <Label fx:id="lblUsername" alignment="CENTER" contentDisplay="CENTER" prefHeight="30.0" prefWidth="111.0" textAlignment="CENTER">
+            <font>
+               <Font name="System Bold" size="20.0" />
+            </font></Label>
+           <Pane prefHeight="169.0" prefWidth="117.0" />
            <Button fx:id="btnSendToServer" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onSendToServer" text="send to Server -&gt;" />
            <Button fx:id="btnSendToClient" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onSendToClient" text="&lt;- send to Client" />
            <Separator prefWidth="200.0" />
@@ -55,7 +62,7 @@
        </VBox>
    </center>
    <left>
-       <VBox prefHeight="735.0" prefWidth="336.0" BorderPane.alignment="CENTER">
+       <VBox fx:id="vboxLeft" prefHeight="735.0" prefWidth="336.0" BorderPane.alignment="CENTER">
            <ToolBar prefHeight="30.0" prefWidth="336.0">
               <items>
                   <Label prefHeight="17.0" prefWidth="34.0" text="Client:" />
@@ -78,7 +85,7 @@
        </VBox>
    </left>
    <right>
-      <VBox prefHeight="735.0" prefWidth="368.0" BorderPane.alignment="CENTER">
+      <VBox fx:id="vboxRight" prefHeight="735.0" prefWidth="368.0" BorderPane.alignment="CENTER">
          <children>
             <ToolBar prefHeight="30.0" prefWidth="368.0">
                <items>
@@ -103,4 +110,49 @@
          </children>
       </VBox>
    </right>
+   <bottom>
+      <VBox fx:id="vboxBottom" prefHeight="112.0" prefWidth="821.0" BorderPane.alignment="CENTER">
+         <BorderPane.margin>
+            <Insets top="5.0" />
+         </BorderPane.margin>
+         <children>
+            <TextArea fx:id="txtMessage" editable="false" prefHeight="200.0" prefWidth="200.0" />
+            <HBox fx:id="hboxAuth" alignment="CENTER" prefHeight="51.0" prefWidth="821.0" spacing="5.0">
+               <children>
+                  <Label text="Login">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtLogin" promptText="enter Login">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </TextField>
+                  <Label text="Password">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtPassword">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </TextField>
+                  <Button fx:id="btnLogin" mnemonicParsing="false" onAction="#onLogin" text="Log in">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                     <HBox.margin>
+                        <Insets left="20.0" />
+                     </HBox.margin>
+                  </Button>
+               </children>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+            </HBox>
+         </children>
+      </VBox>
+   </bottom>
 </BorderPane>

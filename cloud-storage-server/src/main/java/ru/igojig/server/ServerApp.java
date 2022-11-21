@@ -7,6 +7,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import ru.igojig.common.CloudUtil;
+import ru.igojig.server.callback.AuthCallback;
+import ru.igojig.server.handlers.AuthInHandler;
 import ru.igojig.server.service.AuthService;
 import ru.igojig.server.service.impl.AuthServiceImpl;
 
@@ -14,6 +17,8 @@ import ru.igojig.server.service.impl.AuthServiceImpl;
 public class ServerApp  {
 
     AuthService authService;
+
+    AuthCallback authCallback=((login, password) -> authService.getUsernameByLoginAndPassword(login, password));
 
     public ServerApp(){
         authService=new AuthServiceImpl();
@@ -31,16 +36,17 @@ public class ServerApp  {
                     .childHandler(new ChannelInitializer<SocketChannel>() { // (4)
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(  new ServerFirstInHandler());
+                            ch.pipeline().addLast( new AuthInHandler(authCallback));
                         }
                     });
             // .childOption(ChannelOption.SO_KEEPALIVE, true);
-            ChannelFuture f = b.bind(8189).sync();
+            ChannelFuture f = b.bind(CloudUtil.PORT).sync();
             System.out.println("Server started");
             f.channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
+            closeDBConnection();
         }
     }
 
@@ -49,7 +55,7 @@ public class ServerApp  {
         authService.openConnection();
     }
 
-    public void closeConnection(){
+    public void closeDBConnection(){
         authService.closeConnection();
     }
 
@@ -59,9 +65,9 @@ public class ServerApp  {
         ServerApp serverApp=new ServerApp();
         serverApp.connectToDatabase();
 
-        String str=serverApp.authService.getUsernameByLoginAndPassword("petrov", "1").orElse("not found");
-        System.out.println(str);
-        serverApp.closeConnection();
+//        String str=serverApp.authService.getUsernameByLoginAndPassword("petrov", "1").orElse("not found");
+//        System.out.println(str);
+//        serverApp.closeConnection();
         serverApp.run();
     }
 }
