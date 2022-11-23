@@ -3,10 +3,10 @@ package ru.igojig.client.handlers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import ru.igojig.common.callback.CloudCallback;
+import ru.igojig.common.CloudUtil;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
-import ru.igojig.common.CloudUtil;
+import ru.igojig.common.callback.CloudCallback;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -18,12 +18,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
-    ExecutorService executorService= Executors.newSingleThreadExecutor();
 
     private Map<String, CloudCallback> cloudCallbackMap;
 
@@ -34,6 +31,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
     private String fileName;
     private BufferedOutputStream out;
 
+    boolean fileReceived=false;
+
     Path rootPath=Path.of(".", "client_repository");
 
     public void setCloudCallbackMap(Map<String, CloudCallback> map) {
@@ -43,7 +42,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("Канал закрыт");
-        executorService.shutdown();
+        ctx.close();
     }
 
 
@@ -94,7 +93,12 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     byte[] bytesStr=new byte[nextLength];
                     buf.readBytes(bytesStr);
                     String username=new String(bytesStr, StandardCharsets.UTF_8);
+                    // передаем пользователя в контроллер
                     cloudCallbackMap.get("AUTH_OK").callback(username);
+
+                    // добавляем в rootPath пользователя
+                    rootPath=rootPath.resolve(username);
+
                     currentState=HandlerState.IDLE;
                 }
             }
@@ -131,28 +135,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     fileLength = buf.readLong();
                     currentState = HandlerState.FILE;
                     receivedFileLength = 0L;
+                    fileReceived=false;
 
-                    executorService.execute(()->{
-                        while (receivedFileLength<fileLength) {
-                            cloudCallbackMap.get("PROGRESS_BAR").callback( (double)receivedFileLength ,(double) fileLength);
-
-//                            try {
-//                                Thread.sleep(100);
-//                            } catch (InterruptedException e) {
-//                                throw new RuntimeException(e);
-//                            }
-                        }
-                        cloudCallbackMap.get("PROGRESS_BAR").callback(0.,1.);
-
-                    });
-//                    executorService.shutdown();
-//                    new Thread(()->{
-//                        while (receivedFileLength<fileLength) {
-//                            cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
-//                        }
-//                        cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
-//
-//                    }).start();
                 }
             }
 
@@ -161,6 +145,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                 if (fileLength == 0) {
                     System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
                     currentState = HandlerState.IDLE;
+                    fileReceived=true;
                     out.close();
 
                     // обновляем список файлов на клиенте
@@ -171,16 +156,16 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                         byte readed = buf.readByte();
 
                         out.write(readed);
-                        receivedFileLength++;
+                        ++receivedFileLength;
 
-
-
-//                        cloudCallbackMap.get("PROGRESS_BAR").callback(1.0 * receivedFileLength / fileLength);
                         if (receivedFileLength == fileLength) {
-//                            cloudCallbackMap.get("PROGRESS_BAR").callback(0.);
+                            fileReceived=true;
+                            cloudCallbackMap.get("PROGRESS_BAR").callback(0., 1.);
                             System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
                             currentState = HandlerState.IDLE;
                             out.close();
+
+
 
                             // обновляем список файлов на клиенте
                             cloudCallbackMap.get("GET_FILE").callback(fileName, fileLength);
@@ -198,6 +183,9 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
                             break;
                         }
+                    }
+                    if(!fileReceived){
+                        cloudCallbackMap.get("PROGRESS_BAR").callback((double) receivedFileLength , (double) fileLength);
                     }
                 }
             }

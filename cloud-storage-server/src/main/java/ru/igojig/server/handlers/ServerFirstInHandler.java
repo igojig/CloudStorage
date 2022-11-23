@@ -8,6 +8,7 @@ import ru.igojig.common.CloudUtil;
 import ru.igojig.common.Command;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
+import ru.igojig.common.fileutils.FileUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -34,20 +35,26 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
 
     public ServerFirstInHandler(String username) {
         this.username = username;
-        createUserDir(username);
 
-    }
-
-    private void createUserDir(String username) {
+        // добавляем в rootPath имя пользователя
         rootPath=rootPath.resolve(username);
-        if(!Files.exists(rootPath)){
-            try {
-                Files.createDirectory(rootPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+
+        FileUtils.createUserDir(rootPath, obj->{
+            System.out.println((String)obj[0]);
+        });
+
     }
+
+//    private void createUserDir(String username) {
+//
+//        if(!Files.exists(rootPath)){
+//            try {
+//                Files.createDirectory(rootPath);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -57,8 +64,9 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("Пользователь " + username + " отключился" + ctx);
+        System.out.println("Пользователь " + username + " отключился. " + ctx);
         ctx.close();
+
 //        super.channelInactive(ctx);
     }
 
@@ -278,7 +286,6 @@ public class ServerFirstInHandler extends ChannelInboundHandlerAdapter {
                     buf.readBytes(bytes);
                     String filename=new String(bytes, StandardCharsets.UTF_8);
                     currentState=HandlerState.IDLE;
-//                    Path path=Path.of(".","server_repository");
                     Path path=rootPath.resolve(filename);
                     CloudUtil.sendFile(path, ctx.channel(), f->{
                         if (!f.isSuccess()) {

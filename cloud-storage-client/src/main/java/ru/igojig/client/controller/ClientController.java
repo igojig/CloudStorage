@@ -1,5 +1,6 @@
 package ru.igojig.client.controller;
 
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -12,12 +13,14 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import ru.igojig.client.Network;
 import ru.igojig.common.CloudUtil;
+import ru.igojig.common.fileutils.FileUtils;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +72,10 @@ public class ClientController implements Initializable {
     // выбранные в ListView файлы
     String selectedClientFile;
     String selectedServerFile;
+
+    Path rootClientPath=Path.of(".", "client_repository");
+
+
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -164,16 +171,16 @@ public class ClientController implements Initializable {
         if (stringList.isEmpty()) {
             lblServerCount.setText("0");
         }
-        txtMessage.appendText("Получили список файлов от сервера");
-        txtMessage.appendText("\n");
+        txtMessage.appendText("Получили список файлов от сервера\n");
 
-        enableButtons();
+//        enableButtons();
     }
 
     public void updateClientFileListWithFileInfo(String fiilename, long filesize) {
 
-
-        txtMessage.appendText("Приняли файл: " + fiilename + " размер: " + filesize);
+        DecimalFormat dc=new DecimalFormat();
+        dc.setGroupingSize(3);
+        txtMessage.appendText(String.format("Приняли файл:[%s], размер[%s]", fiilename, dc.format(filesize)));
         txtMessage.appendText("\n");
 
         updateClientFileList();
@@ -182,12 +189,12 @@ public class ClientController implements Initializable {
     public void updateClientFileList(){
         clientObservableList.clear();
         selectedClientFile = null;
-        List<String> list = CloudUtil.getFileListInDir(Path.of(".", "client_repository"));
+        List<String> list = CloudUtil.getFileListInDir(rootClientPath);
         clientObservableList.addAll(list);
         if (list.isEmpty()) {
             lblClientCount.setText("0");
         }
-        enableButtons();
+//        enableButtons();
     }
 
 
@@ -200,8 +207,8 @@ public class ClientController implements Initializable {
 //        disableButtons();
 
         System.out.println(selectedClientFile);
-        Path path = Path.of(".", "client_repository");
-        path = path.resolve(selectedClientFile);
+//        Path path = Path.of(".", "client_repository");
+        Path path = rootClientPath.resolve(selectedClientFile);
         System.out.println(path);
         Path finalPath = path;
         CloudUtil.sendFile(path, Network.getInstance().getCurrentChannel(), future -> {
@@ -210,8 +217,7 @@ public class ClientController implements Initializable {
             }
             if (future.isSuccess()) {
                 System.out.println("Файл: " + finalPath.getFileName().toString() + " передан на сервер");
-                txtMessage.appendText("Файл: " + finalPath.getFileName().toString() + " передан на сервер");
-                txtMessage.appendText("\n");
+                Platform.runLater(()->txtMessage.appendText("Файл: " + finalPath.getFileName().toString() + " передан на сервер\n"));
 
             }
         });
@@ -231,8 +237,8 @@ public class ClientController implements Initializable {
             }
             if (future.isSuccess()) {
                 System.out.println("Отправлен запрос на файл: " + selectedServerFile);
-                txtMessage.appendText("Отправлен запрос на файл: " + selectedServerFile);
-                txtMessage.appendText("\n");
+                Platform.runLater(()->txtMessage.appendText("Отправлен запрос на файл: " + selectedServerFile + "\n"));
+
 
             }
         });
@@ -265,9 +271,7 @@ public class ClientController implements Initializable {
             }
             if (future.isSuccess()) {
                 System.out.println("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName);
-                txtMessage.appendText("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName);
-                txtMessage.appendText("\n");
-
+                Platform.runLater(()->txtMessage.appendText("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName + "\n"));
             }
         });
 
@@ -286,9 +290,7 @@ public class ClientController implements Initializable {
             }
             if (future.isSuccess()) {
                 System.out.println("Файл: " + selectedServerFile + " удален на сервере");
-                txtMessage.appendText("Файл: " + selectedServerFile + " удален на сервере");
-                txtMessage.appendText("\n");
-
+                Platform.runLater(()->txtMessage.appendText("Файл: " + selectedServerFile + " удален на сервере\n"));
             }
         });
 
@@ -296,7 +298,7 @@ public class ClientController implements Initializable {
     }
 
     public boolean checkServerFileIsSelected() {
-        if (selectedServerFile == null || selectedServerFile.equals("")) {
+        if (selectedServerFile == null) {
             Alert a = new Alert(Alert.AlertType.ERROR, "Выберите файл");
             a.show();
             return true;
@@ -305,7 +307,7 @@ public class ClientController implements Initializable {
     }
 
     public boolean checkClientFileIsSelected() {
-        if (selectedClientFile == null || selectedClientFile.equals("")) {
+        if (selectedClientFile == null) {
             Alert a = new Alert(Alert.AlertType.ERROR, "Выберите файл");
             a.show();
             return true;
@@ -339,9 +341,7 @@ public class ClientController implements Initializable {
             }
             if (future.isSuccess()) {
                 System.out.println("Запросили список файлов");
-                txtMessage.appendText("Запросили список файлов");
-                txtMessage.appendText("\n");
-
+                Platform.runLater(()->txtMessage.appendText("Запросили список файлов\n"));
             }
         });
     }
@@ -372,15 +372,14 @@ public class ClientController implements Initializable {
             return;
         }
 
-        Path oldPath = Path.of(".", "client_repository", oldFileName);
-        Path newPath = Path.of(".", "client_repository", newFileName);
+        Path oldPath = rootClientPath.resolve(oldFileName);
+        Path newPath = rootClientPath.resolve(newFileName);
         try {
             Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Переименование не удалось");
-            txtMessage.appendText("Переименование не удалось");
-            txtMessage.appendText("\n");
+            Platform.runLater(()->txtMessage.appendText("Переименование не удалось\n"));
 
         }
         updateClientFileList();
@@ -393,7 +392,7 @@ public class ClientController implements Initializable {
 
 //        disableButtons();
 
-        Path path = Path.of(".", "client_repository", selectedClientFile);
+        Path path = rootClientPath.resolve( selectedClientFile);
         try {
             Files.delete(path);
         } catch (IOException e) {
@@ -428,8 +427,7 @@ public class ClientController implements Initializable {
             }
             if (future.isSuccess()) {
                 System.out.println("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password+ "]");
-                txtMessage.appendText("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password+"]");
-                txtMessage.appendText("\n");
+                Platform.runLater(()->txtMessage.appendText("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password+"]" + "\n"));
 
             }
         });
@@ -446,7 +444,25 @@ public class ClientController implements Initializable {
         hboxAuth.setVisible(false);
         hboxAuth.setManaged(false);
 
+        // добавляем в rootPath имя пользователя
+        rootClientPath=rootClientPath.resolve(username);
+//        createUserDir();
+        FileUtils.createUserDir(rootClientPath, (obj)->{
+           Platform.runLater(()->txtMessage.appendText((String)obj[0] + "\n"));
+            System.out.println((String)obj[0]);
+        });
+
         onBtnServerUpdate(null);
         onBtnClientUpdate(null);
     }
+
+//    private void createUserDir() {
+//        if(!Files.exists(rootClientPath)){
+//            try {
+//                Files.createDirectory(rootClientPath);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
 }

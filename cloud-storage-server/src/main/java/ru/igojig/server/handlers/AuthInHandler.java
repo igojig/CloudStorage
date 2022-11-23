@@ -9,17 +9,20 @@ import ru.igojig.common.Header;
 import ru.igojig.server.callback.AuthCallback;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public class AuthInHandler extends ChannelInboundHandlerAdapter {
 
+    private static Set<String> userSet = new HashSet<>();
 
     enum AuthStatus {
         AUTH,
-        AUTH_ERR
+        AUTH_NOT
     }
 
-    private AuthStatus status = AuthStatus.AUTH_ERR;
+    private AuthStatus authStatus = AuthStatus.AUTH_NOT;
 
     private final AuthCallback authCallback;
 
@@ -39,9 +42,15 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        userSet.remove(username);
+        super.channelInactive(ctx);
+    }
+
+    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf byteBuf = (ByteBuf) msg;
-        if (status == AuthStatus.AUTH_ERR) {
+        if (authStatus == AuthStatus.AUTH_NOT) {
             if (byteBuf.readableBytes() > 0) {
                 if (currentState == HandlerState.IDLE) {
 
@@ -71,26 +80,40 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                         String[] arr = strAuth.split(CloudUtil.STRING_DELIMITER);
                         String login = arr[0];
                         String password = arr[1];
-//                        System.out.println(login);
-//                        System.out.println(password);
+
                         // получаем пользователя через callback
-                        Optional<String> optUser=authCallback.authCallback(login, password);
-//                        Optional<String> optUser = authService.getUsernameByLoginAndPassword(login, password);
+                        Optional<String> optUser = authCallback.authCallback(login, password);
                         if (optUser.isPresent()) {
-                            status = AuthStatus.AUTH;
                             username = optUser.get();
-                            CloudUtil.sendAuthOk(username, ctx.channel(), f->{
-                                if (!f.isSuccess()) {
-                                    f.cause().printStackTrace();
-                                }
-                                if (f.isSuccess()) {
-                                    System.out.println("Сообщение об успешной авторизации передано на клиент");
-                                }
-                            });
-                            ctx.pipeline().addLast(new ServerFirstInHandler(username));
-                            System.out.println("Подключился пользователь:" + username);
+                            if (!userSet.contains(username)) {
+                                authStatus = AuthStatus.AUTH;
+                                userSet.add(username);
+                                CloudUtil.sendAuthOk(username, ctx.channel(), f -> {
+                                    if (!f.isSuccess()) {
+                                        f.cause().printStackTrace();
+                                    }
+                                    if (f.isSuccess()) {
+                                        System.out.println("Сообщение об успешной авторизации передано на клиент");
+                                    }
+                                });
+
+                                ctx.pipeline().addLast(new ServerFirstInHandler(username));
+
+                                System.out.println("Подключился пользователь:" + username);
+                            } else {
+                                CloudUtil.sendAuthErr(ctx.channel(), f -> {
+                                    if (!f.isSuccess()) {
+                                        f.cause().printStackTrace();
+                                    }
+                                    if (f.isSuccess()) {
+                                        System.out.println("Сообщение об ошибочной авторизации передано на клиент");
+                                    }
+                                });
+                                System.out.printf("Пользователь %s уже присутствует в системе%n", username);
+                            }
+
                         } else {
-                            CloudUtil.sendAuthErr(ctx.channel(), f->{
+                            CloudUtil.sendAuthErr(ctx.channel(), f -> {
                                 if (!f.isSuccess()) {
                                     f.cause().printStackTrace();
                                 }
@@ -108,7 +131,7 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
 //
 //            byteBuf.release();
         }
-        if (status == AuthStatus.AUTH) {
+        if (authStatus == AuthStatus.AUTH) {
             ctx.fireChannelRead(msg);
         }
     }

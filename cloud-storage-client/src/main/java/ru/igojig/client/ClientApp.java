@@ -16,18 +16,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-public class ClientApp extends  Application {
+public class ClientApp extends Application {
 
-     ClientController clientController;
+    ClientController clientController;
 
-      Map<String, CloudCallback> cloudCallbackMap=new HashMap<>();
-
+    Map<String, CloudCallback> cloudCallbackMap = new HashMap<>();
 
 
     @Override
     public void stop() throws Exception {
         Network.getInstance().stop();
-        CloudUtil.stopExecutors();
     }
 
     @Override
@@ -39,38 +37,39 @@ public class ClientApp extends  Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        clientController=fxmlLoader.getController();
+        clientController = fxmlLoader.getController();
         // для InboundHandlerAdapter
         setCallbacks();
         // для CloudUtils
-        CloudUtil.setCallback((a, b)->{
-            clientController.updateProgressBar(a, b); // received fileLength
+        CloudUtil.setCallback((a, b) -> {Platform.runLater(()->
+            clientController.updateProgressBar(a, b)); // received fileLength
         });
         // запрашиваем список файлов с сервера при открытии окна
 //        clientController.onBtnServerUpdate(null);
 
 
-
     }
 
     private void setCallbacks() {
-        cloudCallbackMap.put("GET_FILE", o->Platform.runLater(()->clientController.updateClientFileListWithFileInfo((String)o[0], (Long)o[1])));
+        cloudCallbackMap.put("GET_FILE", o -> Platform.runLater(() -> clientController.updateClientFileListWithFileInfo((String) o[0], (Long) o[1])));
 
         cloudCallbackMap.put("GET_FILE_LIST", obj -> {
-            Platform.runLater(()->{clientController.updateServerFileList(((List<String>)obj[0]));
-                });
+            Platform.runLater(() -> {
+                clientController.updateServerFileList(((List<String>) obj[0]));
             });
-
-        cloudCallbackMap.put("AUTH_OK", o->{
-            Platform.runLater(()->clientController.onGetAuthOk((String)o[0]));
         });
 
-        cloudCallbackMap.put("AUTH_ERR", o->{
-           clientController.txtMessage.appendText("Ошибка авторизации");
-           clientController.txtMessage.appendText("\n");
+        cloudCallbackMap.put("AUTH_OK", o -> {
+            Platform.runLater(() -> clientController.onGetAuthOk((String) o[0]));
         });
 
-        cloudCallbackMap.put("PROGRESS_BAR", obj -> clientController.updateProgressBar((Double) obj[0], (Double)obj[1]));
+        cloudCallbackMap.put("AUTH_ERR", o -> {
+            clientController.txtMessage.appendText("Ошибка авторизации");
+            clientController.txtMessage.appendText("\n");
+        });
+
+//        cloudCallbackMap.put("PROGRESS_BAR", obj ->clientController.updateProgressBar((Double) obj[0], (Double) obj[1]));
+        cloudCallbackMap.put("PROGRESS_BAR",obj ->Platform.runLater(()->clientController.updateProgressBar((Double) obj[0], (Double) obj[1])));
 
         Network.getInstance().getCurrentChannel().pipeline().get(ClientInHandler.class).setCloudCallbackMap(cloudCallbackMap);
     }
@@ -83,74 +82,7 @@ public class ClientApp extends  Application {
         networkStarter.await();
 
 
-
         launch();
-
-
-//        ByteBuf buf = null;
-//        buf = ByteBufAllocator.DEFAULT.directBuffer(1);
-//        buf.writeByte(ProtocolState.FILE_LIST_REQUEST.getCommand());
-//        Network.getInstance().getCurrentChannel().writeAndFlush(buf);
-
-
-
-//        ProtoFileSender.sendFile(Paths.get("demo.txt"), Network.getInstance().getCurrentChannel(), future -> {
-//            if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
-////                Network.getInstance().stop();
-//            }
-//            if (future.isSuccess()) {
-//                System.out.println("Файл успешно передан");
-////                Network.getInstance().stop();
-//            }
-//        });
-//        Thread.sleep(2000);
-//        ProtoFileSender.sendFile(Paths.get("demo1.txt"), Network.getInstance().getCurrentChannel(), future -> {
-//            if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
-////                Network.getInstance().stop();
-//            }
-//            if (future.isSuccess()) {
-//                System.out.println("Файл успешно передан");
-////                Network.getInstance().stop();
-//            }
-//        });
-
-//        List<String> filelist=List.of("привет.txt", "пока.txt", "один.txt", "два.txt",  "три.txt");
-
-
-//        CloudUtil.sendFileListInDir(Path.of(".", "client_repository"), Network.getInstance().getCurrentChannel(), f->{
-//            if (!f.isSuccess()) {
-//                f.cause().printStackTrace();
-////                Network.getInstance().stop();
-//            }
-//            if (f.isSuccess()) {
-//                System.out.println("Список файлов успешно передан");
-////                Network.getInstance().stop();
-//            }
-//        });
-
-//        ProtoFileSender.sendFileList(filelist, Network.getInstance().getCurrentChannel(), f->{
-//            if (!f.isSuccess()) {
-//                f.cause().printStackTrace();
-////                Network.getInstance().stop();
-//            }
-//            if (f.isSuccess()) {
-//                System.out.println("Список файлов успешно передан");
-////                Network.getInstance().stop();
-//            }
-//        });
-
-//        ProtoFileSender.sendCommand(Network.getInstance().getCurrentChannel(), f->{
-//            if (!f.isSuccess()) {
-//                f.cause().printStackTrace();
-////                Network.getInstance().stop();
-//            }
-//            if (f.isSuccess()) {
-//                System.out.println("Файл перименован");
-////                Network.getInstance().stop();
-//            }
-//        });
 
     }
 }
