@@ -27,7 +27,7 @@
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="FILE_CLIENT"/>
         </Root>
-        <Logger name="io.netty" level="ERROR"/>
+        <Logger name="io.netty" level="TRACE"/>
 <!--        <Logger name="ru.igojig.server.ServerApp" level="debug"/>-->
 <!--        <Logger name="ru.igojig.server.service.AuthService" level="error"/>-->
     </Loggers>

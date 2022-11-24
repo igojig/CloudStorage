@@ -29,7 +29,7 @@ public class ServerApp  {
         authService=new AuthServiceImpl();
     }
 
-    public void run() throws Exception {
+    public void run()  {
 
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -48,7 +48,11 @@ public class ServerApp  {
             ChannelFuture f = b.bind(CloudUtil.PORT).sync();
             logger.info("Server started");
             f.channel().closeFuture().sync();
-        } finally {
+        }
+        catch (InterruptedException e){
+            logger.throwing(e);
+        }
+        finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
             closeDBConnection();

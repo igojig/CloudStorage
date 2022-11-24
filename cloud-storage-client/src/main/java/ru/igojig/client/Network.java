@@ -9,14 +9,17 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.igojig.client.handlers.ClientInHandler;
 import ru.igojig.common.CloudUtil;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class Network {
+
+    private static final Logger logger= LogManager.getLogger(Network.class);
     private static final Network ourInstance = new Network();
 
     public static Network getInstance() {
@@ -47,16 +50,17 @@ public class Network {
                         }
                     });
             ChannelFuture channelFuture = clientBootstrap.connect().sync();
+            logger.info("Client started");
             countDownLatch.countDown();
             channelFuture.channel().closeFuture().sync();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (InterruptedException e) {
+            logger.throwing(e);
         } finally {
 
             try {
                 group.shutdownGracefully().sync();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.throwing(e);
             }
         }
     }

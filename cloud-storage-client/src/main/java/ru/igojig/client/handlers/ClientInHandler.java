@@ -16,6 +16,7 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -24,19 +25,20 @@ import java.util.Map;
 public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger= LogManager.getLogger(ClientInHandler.class);
-
     private Map<String, CloudCallback> cloudCallbackMap;
-
     private HandlerState currentState = HandlerState.IDLE;
     private int nextLength; // длина следующей получаемой части
     private long fileLength;
     private long receivedFileLength;
     private String fileName;
     private BufferedOutputStream out;
-
     boolean fileReceived=false;
-
     Path rootPath=Path.of(".", "client_repository");
+    DecimalFormat decimalFormat=new DecimalFormat();
+    {
+        decimalFormat.setGroupingSize(3);
+    }
+
 
     public void setCloudCallbackMap(Map<String, CloudCallback> map) {
         this.cloudCallbackMap = map;
@@ -44,12 +46,9 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println("Канал закрыт " + ctx);
         logger.warn("Канал закрыт " + ctx);
         ctx.close();
     }
-
-
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -81,7 +80,6 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     currentState=HandlerState.AUTH_LENGTH;
                     nextLength=0;
                 } else {
-//                    System.out.println("Неизвестный тип заголовка: " + controlByte);
                     logger.error("Неизвестный тип заголовка: " + controlByte);
                     buf.release();
                     return;
@@ -124,8 +122,6 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     byte[] bytes = new byte[nextLength];
                     buf.readBytes(bytes);
                     fileName = new String(bytes, StandardCharsets.UTF_8);
-//                    System.out.println(fileName);
-//                    Path path = Path.of(".", "client_repository", fileName);
                     Path path=rootPath.resolve(fileName);
                     if (Files.exists(path)) {
                         Files.delete(path);
@@ -133,6 +129,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     File file = path.toFile();
                     out = new BufferedOutputStream(new FileOutputStream(file));
                     currentState = HandlerState.FILE_LENGTH;
+                    logger.info(String.format("Принимаем файл [%s]", file.getName()));
                 }
             }
 
@@ -150,7 +147,6 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
             if (currentState == HandlerState.FILE) {
                 // ждем файл
                 if (fileLength == 0) {
-//                    System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
                     logger.info("Файл: " + fileName + " принят. Размер: " + fileLength);
                     currentState = HandlerState.IDLE;
                     fileReceived=true;
@@ -169,8 +165,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                         if (receivedFileLength == fileLength) {
                             fileReceived=true;
                             cloudCallbackMap.get("PROGRESS_BAR").callback(0., 1.);
-//                            System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
-                            logger.info("Файл: " + fileName + " принят. Размер: " + fileLength);
+                            logger.info("Файл: " + fileName + " принят. Размер: " + decimalFormat.format(fileLength));
                             currentState = HandlerState.IDLE;
                             out.close();
 
@@ -183,11 +178,9 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                             // передаем клиенту список файлов
                             CloudUtil.sendFileListInDir(rootPath, ctx.channel(), f -> {
                                 if (!f.isSuccess()) {
-//                                    f.cause().printStackTrace();
                                     logger.throwing(f.cause());
                                 }
                                 if (f.isSuccess()) {
-//                                    System.out.println("Список файлов успешно передан на сервер");
                                     logger.info("Список файлов успешно передан на сервер");
                                 }
                             });
@@ -229,7 +222,6 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     // ищем callback и вызываем его
                     cloudCallbackMap.get("GET_FILE_LIST").callback(fileList);
 
-//                    System.out.println("Получили список файлов от сервера:");
                     logger.info("Получили список файлов от сервера:");
                     logger.trace(fileList);
 //                    System.out.println(fileList);
@@ -251,7 +243,6 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-//        cause.printStackTrace();
         logger.throwing(cause);
     }
 }

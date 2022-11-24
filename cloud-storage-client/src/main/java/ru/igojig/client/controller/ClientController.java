@@ -86,7 +86,7 @@ public class ClientController implements Initializable {
         logger.trace("initialize controller");
 
         // кнопки которые блокируются до прихода ответа с серевера или клиента
-        setBlockControls();
+//        setBlockControls();
 
         setHidePanes();
 
@@ -112,16 +112,16 @@ public class ClientController implements Initializable {
 
     }
 
-    private void setBlockControls() {
-        blockControls.add(btnServerUpdate);
-        blockControls.add(btnSendToServer);
-        blockControls.add(btnServerDelete);
-        blockControls.add(btnServerRename);
-        blockControls.add(btnSendToClient);
-        blockControls.add(btnClientUpdate);
-        blockControls.add(btnClientRename);
-        blockControls.add(btnClientDelete);
-    }
+//    private void setBlockControls() {
+//        blockControls.add(btnServerUpdate);
+//        blockControls.add(btnSendToServer);
+//        blockControls.add(btnServerDelete);
+//        blockControls.add(btnServerRename);
+//        blockControls.add(btnSendToClient);
+//        blockControls.add(btnClientUpdate);
+//        blockControls.add(btnClientRename);
+//        blockControls.add(btnClientDelete);
+//    }
 
     private void setCellFactoryForViews() {
         lstClient.setCellFactory(lv -> {

@@ -1,0 +1,5 @@
+--add-opens
+java.base/jdk.internal.misc=io.netty.all
+--add-opens
+java.base/java.nio=io.netty.all
+-Dio.netty.tryReflectionSetAccessible=true
