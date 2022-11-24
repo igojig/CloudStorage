@@ -106,17 +106,16 @@ public class CloudUtil {
         // пишем сам файл
         ChannelFuture transferOperationFuture = channel.writeAndFlush(region, channel.newProgressivePromise());
 
+        // если вызов со стороны сервера, то callback==null
         if(callback!=null) {
             transferOperationFuture.addListener(new ChannelProgressiveFutureListener() {
                 @Override
                 public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) throws Exception {
-//                System.out.println("Progress " + progress + " " + total);
                     callback.progress((double) progress, (double) total);
                 }
 
                 @Override
                 public void operationComplete(ChannelProgressiveFuture future) throws Exception {
-//                System.out.println("Complete");
                     callback.progress(0., 1.);
                 }
             });

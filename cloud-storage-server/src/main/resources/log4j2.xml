@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<log4j:configuration debug="false" xmlns:log4j="http://jakarta.apache.org/log4j/">-->
+<Configuration status="info"  name="MyConfiguration">
+<!--<Configuration debug="false" status="WARN" name="MyConfiguration">-->
+    <Properties>
+        <Property name="basePath">logs</Property>
+    </Properties>
+
+    <Appenders>
+        <File name="FILE_SERVER" fileName="${basePath}/server.log" append="false">
+            <PatternLayout>
+                <pattern>%highlight{%d{HH:mm:ss} [%-5p][%-.16t][%c] - %m%n}{Style=Logback}</pattern>
+<!--                <disableAnsi>false</disableAnsi>-->
+            </PatternLayout>
+        </File>
+
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern>%highlight{%d{HH:mm:ss} [%-5p][%-.16t][%c] - %m%n}{Style=Logback}</pattern>
+                <disableAnsi>false</disableAnsi>
+            </PatternLayout>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="trace">
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="FILE_SERVER"/>
+        </Root>
+        <Logger name="io.netty" level="ERROR"/>
+        <Logger name="ru.igojig.server.ServerApp" level="debug"/>
+        <Logger name="ru.igojig.server.service.AuthService" level="error"/>
+    </Loggers>
+</Configuration>

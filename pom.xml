@@ -19,20 +19,31 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
-<dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.19.0</version>
+        </dependency>
 
-    <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
-    <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
-    <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
-    <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-all</artifactId>
-        <version>4.1.63.Final</version>
-    </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.50.Final</version>
+        </dependency>
 
 
+        <!-- https://mvnrepository.com/artifact/org.fusesource.jansi/jansi -->
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>2.4.0</version>
+        </dependency>
 
-</dependencies>
-
-
+    </dependencies>
 </project>

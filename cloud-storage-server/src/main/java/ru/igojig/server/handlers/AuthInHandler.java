@@ -3,6 +3,8 @@ package ru.igojig.server.handlers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.igojig.common.CloudUtil;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
@@ -14,6 +16,8 @@ import java.util.Optional;
 import java.util.Set;
 
 public class AuthInHandler extends ChannelInboundHandlerAdapter {
+
+    private static final Logger logger=LogManager.getLogger(AuthInHandler.class);
 
     private static Set<String> userSet = new HashSet<>();
 
@@ -37,13 +41,14 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("Пользователь подключился: " + ctx);
+        logger.info("Канал активен: " + ctx);
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         userSet.remove(username);
+        logger.info(String.format("Пользователь %s удален из списка", username));
         super.channelInactive(ctx);
     }
 
@@ -58,7 +63,7 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                     if (controlByte == Header.AUTH_REQUEST.getHeader()) {
                         currentState = HandlerState.AUTH_LENGTH;
                     } else {
-                        System.out.println("Неизвестный тип заголовка авторизации");
+                        logger.error("Неизвестный тип заголовка авторизации: " + controlByte);
                         // релизим буфер
                         byteBuf.release();
                         return;
@@ -90,46 +95,42 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                                 userSet.add(username);
                                 CloudUtil.sendAuthOk(username, ctx.channel(), f -> {
                                     if (!f.isSuccess()) {
-                                        f.cause().printStackTrace();
+                                        logger.throwing(f.cause());
                                     }
                                     if (f.isSuccess()) {
-                                        System.out.println("Сообщение об успешной авторизации передано на клиент");
+                                        logger.info("Сообщение об успешной авторизации передано на клиент");
                                     }
                                 });
-
-                                ctx.pipeline().addLast(new ServerFirstInHandler(username));
-
-                                System.out.println("Подключился пользователь:" + username);
+                                ctx.pipeline().addLast(new ServerFileAndCommandInHandler(username));
+                                logger.info("Подключился пользователь:" + username);
                             } else {
                                 CloudUtil.sendAuthErr(ctx.channel(), f -> {
                                     if (!f.isSuccess()) {
-                                        f.cause().printStackTrace();
+                                        logger.throwing(f.cause());
                                     }
                                     if (f.isSuccess()) {
-                                        System.out.println("Сообщение об ошибочной авторизации передано на клиент");
+                                        logger.warn("Сообщение об ошибочной авторизации передано на клиент");
                                     }
                                 });
-                                System.out.printf("Пользователь %s уже присутствует в системе%n", username);
+                                logger.warn(String.format("Пользователь %s уже присутствует в системе%n", username));
                             }
 
                         } else {
                             CloudUtil.sendAuthErr(ctx.channel(), f -> {
                                 if (!f.isSuccess()) {
-                                    f.cause().printStackTrace();
+                                    logger.throwing(f.cause());
                                 }
                                 if (f.isSuccess()) {
-                                    System.out.println("Сообщение об ошибочной авторизации передано на клиент");
+                                    logger.warn("Сообщение об ошибочной авторизации передано на клиент");
                                 }
                             });
-                            System.out.println("Ошибка авторизации. Login: " + login + " Password: " + password);
+                            logger.warn("Ошибка авторизации. Login: " + login + " Password: " + password);
                         }
                         currentState = HandlerState.IDLE;
                     }
                 }
 
             }
-//
-//            byteBuf.release();
         }
         if (authStatus == AuthStatus.AUTH) {
             ctx.fireChannelRead(msg);
@@ -138,8 +139,7 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-
-        cause.printStackTrace();
+        logger.throwing(cause);
         ctx.close();
     }
 }

@@ -3,6 +3,8 @@ package ru.igojig.client.handlers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.igojig.common.CloudUtil;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
@@ -21,6 +23,7 @@ import java.util.Map;
 
 public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
+    private static final Logger logger= LogManager.getLogger(ClientInHandler.class);
 
     private Map<String, CloudCallback> cloudCallbackMap;
 
@@ -41,7 +44,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("Канал закрыт");
+//        System.out.println("Канал закрыт " + ctx);
+        logger.warn("Канал закрыт " + ctx);
         ctx.close();
     }
 
@@ -77,7 +81,10 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     currentState=HandlerState.AUTH_LENGTH;
                     nextLength=0;
                 } else {
-                    System.out.println("Неизвестный тип заголовка: " + controlByte);
+//                    System.out.println("Неизвестный тип заголовка: " + controlByte);
+                    logger.error("Неизвестный тип заголовка: " + controlByte);
+                    buf.release();
+                    return;
                 }
             }
 
@@ -143,7 +150,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
             if (currentState == HandlerState.FILE) {
                 // ждем файл
                 if (fileLength == 0) {
-                    System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
+//                    System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
+                    logger.info("Файл: " + fileName + " принят. Размер: " + fileLength);
                     currentState = HandlerState.IDLE;
                     fileReceived=true;
                     out.close();
@@ -161,7 +169,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                         if (receivedFileLength == fileLength) {
                             fileReceived=true;
                             cloudCallbackMap.get("PROGRESS_BAR").callback(0., 1.);
-                            System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
+//                            System.out.println("Файл: " + fileName + " принят. Размер: " + fileLength);
+                            logger.info("Файл: " + fileName + " принят. Размер: " + fileLength);
                             currentState = HandlerState.IDLE;
                             out.close();
 
@@ -174,10 +183,12 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                             // передаем клиенту список файлов
                             CloudUtil.sendFileListInDir(rootPath, ctx.channel(), f -> {
                                 if (!f.isSuccess()) {
-                                    f.cause().printStackTrace();
+//                                    f.cause().printStackTrace();
+                                    logger.throwing(f.cause());
                                 }
                                 if (f.isSuccess()) {
-                                    System.out.println("Список файлов успешно передан на сервер");
+//                                    System.out.println("Список файлов успешно передан на сервер");
+                                    logger.info("Список файлов успешно передан на сервер");
                                 }
                             });
 
@@ -218,8 +229,10 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     // ищем callback и вызываем его
                     cloudCallbackMap.get("GET_FILE_LIST").callback(fileList);
 
-                    System.out.println("Получили список файлов от сервера:");
-                    System.out.println(fileList);
+//                    System.out.println("Получили список файлов от сервера:");
+                    logger.info("Получили список файлов от сервера:");
+                    logger.trace(fileList);
+//                    System.out.println(fileList);
                     currentState = HandlerState.IDLE;
                 }
             }
@@ -238,6 +251,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+//        cause.printStackTrace();
+        logger.throwing(cause);
     }
 }

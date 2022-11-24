@@ -5,6 +5,10 @@ module cloud.storage.client {
 
     requires cloud.storage.common;
 
+    requires jdk.unsupported;
+    requires org.apache.logging.log4j;
+
+
     exports ru.igojig.client;
     opens ru.igojig.client to javafx.fxml;
 
