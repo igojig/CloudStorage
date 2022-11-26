@@ -7,14 +7,13 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.igojig.common.CloudUtil;
+import ru.igojig.common.protocol.ProtocolUtils;
 import ru.igojig.server.callback.AuthCallback;
 import ru.igojig.server.handlers.AuthInHandler;
 import ru.igojig.server.service.AuthService;
 import ru.igojig.server.service.impl.AuthServiceImpl;
-
-import org.apache.logging.log4j.LogManager;
 
 
 public class ServerApp  {
@@ -45,7 +44,7 @@ public class ServerApp  {
                         }
                     });
             // .childOption(ChannelOption.SO_KEEPALIVE, true);
-            ChannelFuture f = b.bind(CloudUtil.PORT).sync();
+            ChannelFuture f = b.bind(ProtocolUtils.PORT).sync();
             logger.info("Server started");
             f.channel().closeFuture().sync();
         }

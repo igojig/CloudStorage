@@ -7,6 +7,7 @@ import ru.igojig.server.service.AuthService;
 import java.net.URL;
 import java.sql.*;
 import java.util.Optional;
+import java.util.SimpleTimeZone;
 
 public class AuthServiceImpl implements AuthService {
 
@@ -30,15 +31,20 @@ public class AuthServiceImpl implements AuthService {
         String connectionStr = "jdbc:sqlite:";
 
         URL url = AuthServiceImpl.class.getResource("cloud_users.db");
-
-        String databaseStr = url.toString();
-        connectionStr += databaseStr;
-        try {
-            connection = DriverManager.getConnection(connectionStr);
-            logger.info("Объект Connection получен");
-        } catch (SQLException e) {
-            logger.throwing(e);
-            throw new RuntimeException(e);
+        if(url!=null) {
+            String databaseStr = url.toString();
+            connectionStr += databaseStr;
+            try {
+                connection = DriverManager.getConnection(connectionStr);
+                logger.info("Объект Connection получен");
+            } catch (SQLException e) {
+                logger.throwing(e);
+                System.exit(0);
+            }
+        }
+        else {
+            logger.fatal("Соединение с БД не установлено");
+            System.exit(0);
         }
 
     }

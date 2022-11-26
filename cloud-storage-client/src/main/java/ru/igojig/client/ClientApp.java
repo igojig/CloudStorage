@@ -7,10 +7,12 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import ru.igojig.client.Network.Network;
 import ru.igojig.client.controller.ClientController;
 import ru.igojig.client.handlers.ClientInHandler;
-import ru.igojig.common.CloudUtil;
-import ru.igojig.common.callback.CloudCallback;
+import ru.igojig.common.protocol.ProtocolUtils;
+import ru.igojig.common.callback.ProtoCallback;
+import ru.igojig.common.fileutils.FileUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -25,13 +27,14 @@ public class ClientApp extends Application {
 
     ClientController clientController;
 
-    Map<String, CloudCallback> cloudCallbackMap = new HashMap<>();
+    Map<String, ProtoCallback> cloudCallbackMap = new HashMap<>();
 
 
     @Override
     public void stop() throws Exception {
         Network.getInstance().stop();
-        logger.info("Сетевое соединение закрыто");
+        FileUtils.stopExecutor();
+        logger.warn(String.format("Клиентское приложение закрыто. Пользователь: [%s]", clientController.getUsername()));
     }
 
     @Override
@@ -46,13 +49,11 @@ public class ClientApp extends Application {
         clientController = fxmlLoader.getController();
         // для InboundHandlerAdapter
         setCallbacks();
-        // для CloudUtils
-        CloudUtil.setCallback((a, b) -> {Platform.runLater(()->
-            clientController.updateProgressBar(a, b)); // received fileLength
-        });
-        // запрашиваем список файлов с сервера при открытии окна
-//        clientController.onBtnServerUpdate(null);
 
+//        // для CloudUtils
+//        ProtocolUtils.setCallback((a, b) -> {Platform.runLater(()->
+//            clientController.updateProgressBar(a, b)); // received fileLength
+//        });
 
     }
 

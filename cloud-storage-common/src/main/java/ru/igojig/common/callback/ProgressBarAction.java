@@ -1,6 +1,6 @@
 package ru.igojig.common.callback;
 
 @FunctionalInterface
-public interface ProgressBarActive {
+public interface ProgressBarAction {
     void progress(double received, double fullLength);
 }

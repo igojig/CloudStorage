@@ -54,7 +54,7 @@
            <Button fx:id="btnSendToServer" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onSendToServer" text="send to Server -&gt;" />
            <Button fx:id="btnSendToClient" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onSendToClient" text="&lt;- send to Client" />
            <Separator prefWidth="200.0" />
-         <ProgressBar fx:id="progressBar" prefWidth="200.0" progress="0.01">
+         <ProgressBar fx:id="progressBar" prefWidth="200.0" progress="0.0">
             <VBox.margin>
                <Insets left="5.0" right="5.0" />
             </VBox.margin>
@@ -78,6 +78,7 @@
                <Button fx:id="btnClientUpdate" mnemonicParsing="false" onAction="#onBtnClientUpdate" text="Update" />
                <Button fx:id="btnClientRename" mnemonicParsing="false" onAction="#onClientRename" text="Rename" />
                <Button fx:id="btnClientDelete" mnemonicParsing="false" onAction="#onClientDelete" text="Delete" />
+               <Button fx:id="btnAddFile" mnemonicParsing="false" onAction="#onAddFile" text="Add File" />
             </children>
             <padding>
                <Insets left="5.0" top="5.0" />

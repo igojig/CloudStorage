@@ -5,7 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.igojig.common.CloudUtil;
+import ru.igojig.common.protocol.ProtocolUtils;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
 import ru.igojig.server.callback.AuthCallback;
@@ -41,14 +41,14 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Канал активен: " + ctx);
+        logger.trace("Канал активен: " + ctx);
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         userSet.remove(username);
-        logger.info(String.format("Пользователь %s удален из списка", username));
+        logger.warn(String.format("Пользователь %s удален из списка", username));
         super.channelInactive(ctx);
     }
 
@@ -82,7 +82,7 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                         byte[] authBytes = new byte[nextLength];
                         byteBuf.readBytes(authBytes);
                         String strAuth = new String(authBytes, StandardCharsets.UTF_8);
-                        String[] arr = strAuth.split(CloudUtil.STRING_DELIMITER);
+                        String[] arr = strAuth.split(ProtocolUtils.TOKEN_DELIMITER);
                         String login = arr[0];
                         String password = arr[1];
 
@@ -90,10 +90,11 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                         Optional<String> optUser = authCallback.authCallback(login, password);
                         if (optUser.isPresent()) {
                             username = optUser.get();
+                            // проверка - залогинен ли уже пользователь
                             if (!userSet.contains(username)) {
                                 authStatus = AuthStatus.AUTH;
                                 userSet.add(username);
-                                CloudUtil.sendAuthOk(username, ctx.channel(), f -> {
+                                ProtocolUtils.sendAuthOk(username, ctx.channel(), f -> {
                                     if (!f.isSuccess()) {
                                         logger.throwing(f.cause());
                                     }
@@ -101,10 +102,12 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                                         logger.info("Сообщение об успешной авторизации передано на клиент");
                                     }
                                 });
+                                // добавляем Handler!!!
                                 ctx.pipeline().addLast(new ServerFileAndCommandInHandler(username));
+
                                 logger.info("Подключился пользователь:" + username);
                             } else {
-                                CloudUtil.sendAuthErr(ctx.channel(), f -> {
+                                ProtocolUtils.sendAuthErr(ctx.channel(), f -> {
                                     if (!f.isSuccess()) {
                                         logger.throwing(f.cause());
                                     }
@@ -116,7 +119,7 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
                             }
 
                         } else {
-                            CloudUtil.sendAuthErr(ctx.channel(), f -> {
+                            ProtocolUtils.sendAuthErr(ctx.channel(), f -> {
                                 if (!f.isSuccess()) {
                                     logger.throwing(f.cause());
                                 }

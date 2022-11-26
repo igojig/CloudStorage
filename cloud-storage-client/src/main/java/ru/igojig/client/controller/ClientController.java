@@ -11,12 +11,16 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.igojig.client.Network;
-import ru.igojig.common.CloudUtil;
+import ru.igojig.client.Network.Network;
+import ru.igojig.common.callback.ProgressBarAction;
+import ru.igojig.common.callback.ProtoCallback;
 import ru.igojig.common.fileutils.FileUtils;
+import ru.igojig.common.protocol.ProtocolUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -28,9 +32,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
+
 public class ClientController implements Initializable {
 
-    private static final Logger logger= LogManager.getLogger(ClientController.class);
+    private static final Logger logger = LogManager.getLogger(ClientController.class);
 
     public ListView<String> lstClient;
     public ListView<String> lstServer;
@@ -60,14 +65,15 @@ public class ClientController implements Initializable {
     public VBox vboxLeft;
     public VBox vboxRight;
     public VBox vboxBottom;
+    public Button btnAddFile;
     //_________________________________
 
-    String username; // приходит после успешной авторизации
+    private String username; // приходит после успешной авторизации
 
     //=================================================
 
     List<Control> blockControls = new ArrayList<>();
-    List<Pane>  hideblePanes=new ArrayList<>();
+    List<Pane> hideblePanes = new ArrayList<>();
 
 
     ObservableList<String> clientObservableList;
@@ -77,15 +83,15 @@ public class ClientController implements Initializable {
     String selectedClientFile;
     String selectedServerFile;
 
-    Path rootClientPath=Path.of(".", "client_repository");
-
+    Path rootClientPath = Path.of(".", "client_repository");
 
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         logger.trace("initialize controller");
 
-        // кнопки которые блокируются до прихода ответа с серевера или клиента
+
+        // кнопки, которые блокируются до прихода ответа с сервера или клиента
 //        setBlockControls();
 
         setHidePanes();
@@ -99,7 +105,7 @@ public class ClientController implements Initializable {
         serverObservableList.addListener((ListChangeListener<String>) c -> lblServerCount.setText(String.valueOf(serverObservableList.size())));
         clientObservableList.addListener((ListChangeListener<String>) c -> lblClientCount.setText(String.valueOf(clientObservableList.size())));
 
-        hideblePanes.forEach(o->o.setVisible(false));
+        hideblePanes.forEach(o -> o.setVisible(false));
 
 
 //        updateClientFileList();
@@ -112,6 +118,7 @@ public class ClientController implements Initializable {
 
     }
 
+    // скрываем кнопки после отправки файлов
 //    private void setBlockControls() {
 //        blockControls.add(btnServerUpdate);
 //        blockControls.add(btnSendToServer);
@@ -182,17 +189,17 @@ public class ClientController implements Initializable {
 
     public void updateClientFileListWithFileInfo(String fiilename, long filesize) {
 
-        DecimalFormat dc=new DecimalFormat();
+        DecimalFormat dc = new DecimalFormat();
         dc.setGroupingSize(3);
         txtMessage.appendText(String.format("Приняли файл:[%s], размер[%s]%n", fiilename, dc.format(filesize)));
 
         updateClientFileList();
     }
 
-    public void updateClientFileList(){
+    public void updateClientFileList() {
         clientObservableList.clear();
         selectedClientFile = null;
-        List<String> list = CloudUtil.getFileListInDir(rootClientPath);
+        List<String> list = FileUtils.getFileListInDir(rootClientPath);
         clientObservableList.addAll(list);
         if (list.isEmpty()) {
             lblClientCount.setText("0");
@@ -207,25 +214,19 @@ public class ClientController implements Initializable {
             return;
         }
 
-//        disableButtons();
-
-//        System.out.println(selectedClientFile);
-//        Path path = Path.of(".", "client_repository");
         Path path = rootClientPath.resolve(selectedClientFile);
-//        System.out.println(path);
-        Path finalPath = path;
-        CloudUtil.sendFile(path, Network.getInstance().getCurrentChannel(), future -> {
-            if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
-                logger.throwing(future.cause());
-            }
-            if (future.isSuccess()) {
-//                System.out.println("Файл: " + finalPath.getFileName().toString() + " передан на сервер");
-                logger.info("Файл: " + finalPath.getFileName().toString() + " передан на сервер");
-                Platform.runLater(()->txtMessage.appendText("Файл: " + finalPath.getFileName().toString() + " передан на сервер\n"));
+        ProtocolUtils.sendFile(path, Network.getInstance().getCurrentChannel(),
+                future -> {
+                    if (!future.isSuccess()) {
+                        logger.throwing(future.cause());
+                    }
+                    if (future.isSuccess()) {
+                        logger.info("Файл: " + path.getFileName().toString() + " передан на сервер");
+                        Platform.runLater(() -> txtMessage.appendText("Файл: " + path.getFileName().toString() + " передан на сервер\n"));
 
-            }
-        });
+                    }
+                },
+                (a, b) -> Platform.runLater(()->updateProgressBar(a, b)));
     }
 
     public void onSendToClient(ActionEvent actionEvent) {
@@ -233,18 +234,14 @@ public class ClientController implements Initializable {
             return;
         }
 
-//        disableButtons();
 
-//        System.out.println(selectedServerFile);
-        CloudUtil.sendCommandFileRequest(selectedServerFile, Network.getInstance().getCurrentChannel(), future -> {
+        ProtocolUtils.sendCommandGetFile(selectedServerFile, Network.getInstance().getCurrentChannel(), future -> {
             if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
                 logger.throwing(future.cause());
             }
             if (future.isSuccess()) {
-//                System.out.println("Отправлен запрос на файл: " + selectedServerFile);
                 logger.info("Отправлен запрос на файл: " + selectedServerFile);
-                Platform.runLater(()->txtMessage.appendText("Отправлен запрос на файл: " + selectedServerFile + "\n"));
+                Platform.runLater(() -> txtMessage.appendText("Отправлен запрос на файл: " + selectedServerFile + "\n"));
 
 
             }
@@ -272,15 +269,13 @@ public class ClientController implements Initializable {
         }
 
         String finalNewFileName = newFileName;
-        CloudUtil.sendCommandRenameFile(selectedServerFile, newFileName, Network.getInstance().getCurrentChannel(), future -> {
+        ProtocolUtils.sendCommandRenameFile(selectedServerFile, newFileName, Network.getInstance().getCurrentChannel(), future -> {
             if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
                 logger.throwing(future.cause());
             }
             if (future.isSuccess()) {
-//                System.out.println("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName);
                 logger.info("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName);
-                Platform.runLater(()->txtMessage.appendText("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName + "\n"));
+                Platform.runLater(() -> txtMessage.appendText("Файл: " + selectedServerFile + " переименован на сервере: " + finalNewFileName + "\n"));
             }
         });
 
@@ -293,15 +288,13 @@ public class ClientController implements Initializable {
 
 //        disableButtons();
 
-        CloudUtil.sendCommandDeleteFile(selectedServerFile, Network.getInstance().getCurrentChannel(), future -> {
+        ProtocolUtils.sendCommandDeleteFile(selectedServerFile, Network.getInstance().getCurrentChannel(), future -> {
             if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
                 logger.throwing(future.cause());
             }
             if (future.isSuccess()) {
-//                System.out.println("Файл: " + selectedServerFile + " удален на сервере");
                 logger.info("Файл: " + selectedServerFile + " удален на сервере");
-                Platform.runLater(()->txtMessage.appendText("Файл: " + selectedServerFile + " удален на сервере\n"));
+                Platform.runLater(() -> txtMessage.appendText("Файл: " + selectedServerFile + " удален на сервере\n"));
             }
         });
 
@@ -339,22 +332,20 @@ public class ClientController implements Initializable {
     }
 
     public void updateProgressBar(double received, double fullLength) {
-        progressBar.setProgress(received/fullLength);
+        progressBar.setProgress(received / fullLength);
     }
 
     public void onBtnServerUpdate(ActionEvent actionEvent) {
 
 //        disableButtons();
 
-        CloudUtil.requestFileList(Network.getInstance().getCurrentChannel(), future -> {
+        ProtocolUtils.requestFileList(Network.getInstance().getCurrentChannel(), future -> {
             if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
                 logger.throwing(future.cause());
             }
             if (future.isSuccess()) {
-//                System.out.println("Запросили список файлов");
                 logger.info("Запросили список файлов");
-                Platform.runLater(()->txtMessage.appendText("Запросили список файлов\n"));
+                Platform.runLater(() -> txtMessage.appendText("Запросили список файлов\n"));
             }
         });
     }
@@ -392,11 +383,9 @@ public class ClientController implements Initializable {
             txtMessage.appendText(String.format("Файл %s переименован в %s%n", oldPath, newPath));
             logger.info(String.format("Файл %s переименован в %s", oldPath, newPath));
         } catch (IOException e) {
-//            e.printStackTrace();
             logger.throwing(e);
-//            System.out.println("Переименование не удалось");
             logger.warn("Переименование не удалось: " + oldPath);
-            Platform.runLater(()->txtMessage.appendText("Переименование не удалось: " + oldPath+"\n"));
+            Platform.runLater(() -> txtMessage.appendText("Переименование не удалось: " + oldPath + "\n"));
 
         }
         updateClientFileList();
@@ -409,16 +398,14 @@ public class ClientController implements Initializable {
 
 //        disableButtons();
 
-        Path path = rootClientPath.resolve( selectedClientFile);
+        Path path = rootClientPath.resolve(selectedClientFile);
         try {
             Files.delete(path);
             txtMessage.appendText(String.format("Файл %s удален%n", path));
             logger.info("Файл: " + path + " удален");
         } catch (IOException e) {
-//            e.printStackTrace();
             logger.throwing(e);
-//            System.out.println("Не удалось удалить файл: "+ path);
-            logger.warn("Не удалось удалить файл: "+ path);
+            logger.warn("Не удалось удалить файл: " + path);
             txtMessage.appendText("Не удалось удалить файл: " + path);
             txtMessage.appendText("\n");
 
@@ -436,21 +423,18 @@ public class ClientController implements Initializable {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Ошибка");
             alert.setHeaderText("Логин и пароль не должны быть пустыми");
-//            alert.setContentText("Ooops, there was an error!");
 
             alert.showAndWait();
             return;
         }
 
-        CloudUtil.sendAuth(login, password, Network.getInstance().getCurrentChannel(), future -> {
+        ProtocolUtils.sendAuth(login, password, Network.getInstance().getCurrentChannel(), future -> {
             if (!future.isSuccess()) {
-//                future.cause().printStackTrace();
                 logger.throwing(future.cause());
             }
             if (future.isSuccess()) {
-//                System.out.println("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password+ "]");
-                logger.info("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password+ "]");
-                Platform.runLater(()->txtMessage.appendText("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password+"]" + "\n"));
+                logger.info("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password + "]");
+                Platform.runLater(() -> txtMessage.appendText("Отправили запрос на авторизацию. Login: [" + login + "] Password: [" + password + "]" + "\n"));
 
             }
         });
@@ -458,36 +442,95 @@ public class ClientController implements Initializable {
 
     }
 
-    public void onGetAuthOk(String username){
-        this.username=username;
+    public void onGetAuthOk(String username) {
+        this.username = username;
         lblUsername.setText(username);
         txtMessage.appendText("Пользователь подключился как: " + username);
         txtMessage.appendText("\n");
         logger.info("Пользователь подключился как: " + username);
-        hideblePanes.forEach(o->o.setVisible(true));
-        hboxAuth.setVisible(false);
-        hboxAuth.setManaged(false);
+        hideLoginAndShowMainForm();
 
         // добавляем в rootPath имя пользователя
-        rootClientPath=rootClientPath.resolve(username);
-//        createUserDir();
-        FileUtils.createUserDir(rootClientPath, (obj)->{
-           Platform.runLater(()->txtMessage.appendText((String)obj[0] + "\n"));
-//            System.out.println((String)obj[0]);
-            logger.info((String)obj[0]);
+        rootClientPath = rootClientPath.resolve(username);
+        FileUtils.createUserDir(rootClientPath, (obj) -> {
+            Platform.runLater(() -> txtMessage.appendText((String) obj[0] + "\n"));
+            logger.info((String) obj[0]);
         });
 
         onBtnServerUpdate(null);
         onBtnClientUpdate(null);
     }
 
-//    private void createUserDir() {
-//        if(!Files.exists(rootClientPath)){
-//            try {
-//                Files.createDirectory(rootClientPath);
+    private void hideLoginAndShowMainForm() {
+        hideblePanes.forEach(o -> o.setVisible(true));
+        hboxAuth.setVisible(false);
+        hboxAuth.setManaged(false);
+    }
+
+    public void onAddFile(ActionEvent actionEvent) {
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open  File");
+        File selectedFile = fileChooser.showOpenDialog(null);
+        if (selectedFile == null) {
+            return;
+        }
+        logger.info("Добавляем файл: " + selectedFile.getName());
+        Path selectedPath = selectedFile.toPath();
+        Path newPath = rootClientPath.resolve(selectedPath.getFileName());
+
+        ProtoCallback infoController = obj -> {
+            Platform.runLater(() -> updateClientFileListWithFileInfo((String) obj[0], (Long) obj[1]));
+        };
+
+        ProgressBarAction setProgress = (part, fullLength)-> {
+            Platform.runLater(() -> this.updateProgressBar(part, fullLength));
+        };
+
+
+        FileUtils.addExternalFile(selectedPath, newPath, infoController, setProgress);
+
+
+//        Thread thread=new Thread(()->{
+//            try( FileInputStream fis=new FileInputStream(selectedPath.toFile());
+//                 BufferedInputStream bis=new BufferedInputStream(fis);
+//
+//                 FileOutputStream fos=new FileOutputStream(newPath.toFile());
+//                 BufferedOutputStream bos=new BufferedOutputStream(fos);) {
+//
+//
+//                int read=0;
+//                long readedBytes=0;
+//                byte[] buf=new byte[8192];
+//                while((read = bis.read(buf))>0) {
+//                    readedBytes+=read;
+//                    bos.write(buf, 0, read);
+//                    long finalReadedBytes = readedBytes;
+//                    progressBar.setProgress(1.0* finalReadedBytes /length);
+//                }
+//                progressBar.setProgress(0.);
+//                cloudCallback.callback(newPath.getFileName().toString(), length);
 //            } catch (IOException e) {
-//                throw new RuntimeException(e);
+//               e.printStackTrace();
 //            }
+//        });
+//        thread.start();
+
+
+//        Path path =selectedFile.toPath();
+//        Path  newFile=path.getFileName();
+//        newFile=rootClientPath.resolve(newFile);
+//        try {
+//            Files.copy(path, newFile, StandardCopyOption.REPLACE_EXISTING);
+//            logger.info(String.format("Файл [%s] скопирован в [%s]", path.getFileName().toString(), newFile));
+//        } catch (IOException e) {
+//            logger.throwing(e);
 //        }
-//    }
+//        updateClientFileList();
+    }
+
+
+    public String getUsername() {
+        return username;
+    }
 }

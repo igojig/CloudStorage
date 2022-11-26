@@ -14,6 +14,9 @@ module cloud.storage.client {
 
     exports ru.igojig.client.controller;
     opens ru.igojig.client.controller to javafx.fxml;
+    opens ru.igojig.client.Network to javafx.fxml;
+    exports ru.igojig.client.Network;
+
 
 
 }

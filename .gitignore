@@ -2,3 +2,6 @@
 /cloud-storage-client/target/
 /cloud-storage-common/target/
 /cloud-storage-server/target/
+/log/*.log
+/client_repository/
+/server_repository/

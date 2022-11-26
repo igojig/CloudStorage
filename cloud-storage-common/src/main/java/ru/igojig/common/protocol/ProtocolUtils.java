@@ -1,58 +1,33 @@
-package ru.igojig.common;
+package ru.igojig.common.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.*;
-import ru.igojig.common.callback.ProgressBarActive;
+import ru.igojig.common.Command;
+import ru.igojig.common.Header;
+import ru.igojig.common.callback.ProgressBarAction;
+import ru.igojig.common.fileutils.FileUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class CloudUtil {
-
-
-    private static ProgressBarActive callback;
-
-    public static final String STRING_DELIMITER = "&";
+public class ProtocolUtils {
+    public static final String TOKEN_DELIMITER = "&";
     public static final String HOST = "localhost";
     public static final int PORT = 8189;
+    public static final int COPY_BUFFER_SIZE = 8192;
 
-    public static void setCallback(ProgressBarActive callback) {
-        CloudUtil.callback = callback;
-    }
 
-    public static List<String> getFileListInDir(Path path) {
-        try (Stream<Path> stream = Files.list(path)) {
-            return stream
-                    .filter(p -> !Files.isDirectory(p))
-//                    .filter(p-> {
-//                        try {
-//                            return !Files.isHidden(p);
-//                        } catch (IOException e) {
-//                            throw new RuntimeException(e);
-//                        }
-//                    })
-                    .map(p -> p.getFileName().toString())
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-
-    }
 
      public static void sendFileListInDir(Path path, Channel channel, ChannelFutureListener finishListener) {
 
         ByteBuf buf = null;
 
-        List<String> fileList = CloudUtil.getFileListInDir(path);
-        String strFileList = String.join(STRING_DELIMITER, fileList);
+        List<String> fileList = FileUtils.getFileListInDir(path);
+        String strFileList = String.join(ProtocolUtils.TOKEN_DELIMITER, fileList);
         byte[] bytesStr = strFileList.getBytes(StandardCharsets.UTF_8);
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + bytesStr.length);
@@ -80,7 +55,7 @@ public class CloudUtil {
         }
     }
 
-     public static void sendFile(Path path, Channel channel, ChannelFutureListener finishListener) throws IOException {
+     public static void sendFile(Path path, Channel channel, ChannelFutureListener finishListener, ProgressBarAction progressCallback) throws IOException {
         FileRegion region = new DefaultFileRegion(path.toFile(), 0, Files.size(path));
 
         ByteBuf buf = null;
@@ -107,29 +82,25 @@ public class CloudUtil {
         ChannelFuture transferOperationFuture = channel.writeAndFlush(region, channel.newProgressivePromise());
 
         // если вызов со стороны сервера, то callback==null
-        if(callback!=null) {
+        if(progressCallback!=null) {
             transferOperationFuture.addListener(new ChannelProgressiveFutureListener() {
                 @Override
                 public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) throws Exception {
-                    callback.progress((double) progress, (double) total);
+                    progressCallback.progress((double) progress, (double) total);
                 }
-
                 @Override
                 public void operationComplete(ChannelProgressiveFuture future) throws Exception {
-                    callback.progress(0., 1.);
+                    progressCallback.progress(0., 1.);
                 }
             });
         }
 
-
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
         }
-
-
     }
 
-     public static void sendCommandFileRequest(String filename, Channel channel, ChannelFutureListener finishListener) {
+     public static void sendCommandGetFile(String filename, Channel channel, ChannelFutureListener finishListener) {
         ByteBuf buf = null;
 
         byte[] filenameBytes = filename.getBytes(StandardCharsets.UTF_8);
@@ -153,7 +124,7 @@ public class CloudUtil {
 
     public static void sendCommandRenameFile(String oldName, String newName, Channel channel, ChannelFutureListener finishListener) {
         ByteBuf buf = null;
-        String strBody = oldName + CloudUtil.STRING_DELIMITER + newName;
+        String strBody = oldName + ProtocolUtils.TOKEN_DELIMITER + newName;
         byte[] bytes = strBody.getBytes(StandardCharsets.UTF_8);
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 1 + 4 + bytes.length);
@@ -192,7 +163,7 @@ public class CloudUtil {
 
      public static void sendAuth(String login, String password, Channel channel, ChannelFutureListener finishListener) {
         ByteBuf buf = null;
-        String authStr = login + STRING_DELIMITER + password;
+        String authStr = login + ProtocolUtils.TOKEN_DELIMITER + password;
         byte[] authBytes = authStr.getBytes(StandardCharsets.UTF_8);
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + authBytes.length);

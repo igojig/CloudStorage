@@ -1,5 +1,5 @@
 package ru.igojig.common.callback;
 
-public interface CloudCallback {
+public interface ProtoCallback {
     void callback(Object... obj);
 }

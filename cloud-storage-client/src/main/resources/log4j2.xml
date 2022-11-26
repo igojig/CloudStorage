@@ -4,19 +4,27 @@
 <!--<Configuration debug="false" status="WARN" name="MyConfiguration">-->
     <Properties>
         <Property name="basePath">logs</Property>
+        <Property name="pattern">%highlight{[%-5p] %d{HH:mm:ss} [%-.20t][%c] - %m%n}{Style=Logback}</Property>
     </Properties>
 
     <Appenders>
         <File name="FILE_CLIENT" fileName="${basePath}/client.log" append="false">
             <PatternLayout>
-                <pattern>%highlight{%d{HH:mm:ss} [%-5p][%-.16t][%c] - %m%n}{Style=Logback}</pattern>
+                <pattern>${pattern}</pattern>
 <!--                <disableAnsi>false</disableAnsi>-->
+            </PatternLayout>
+        </File>
+
+        <File name="NETTY_CLIENT" fileName="${basePath}/netty_client.log" append="false">
+            <PatternLayout>
+                <pattern>${pattern}</pattern>
+                <!--                <disableAnsi>false</disableAnsi>-->
             </PatternLayout>
         </File>
 
         <Console name="STDOUT" target="SYSTEM_OUT">
             <PatternLayout>
-                <pattern>%highlight{%d{HH:mm:ss} [%-5p][%-.16t][%c] - %m%n}{Style=Logback}</pattern>
+                <pattern>${pattern}</pattern>
                 <disableAnsi>false</disableAnsi>
             </PatternLayout>
         </Console>
@@ -27,7 +35,10 @@
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="FILE_CLIENT"/>
         </Root>
-        <Logger name="io.netty" level="TRACE"/>
+        <Logger name="io.netty" level="TRACE" additivity="false">
+            <AppenderRef ref="NETTY_CLIENT"/>
+        </Logger>>
+<!--        <Logger name="io.netty" level="TRACE"/>-->
 <!--        <Logger name="ru.igojig.server.ServerApp" level="debug"/>-->
 <!--        <Logger name="ru.igojig.server.service.AuthService" level="error"/>-->
     </Loggers>

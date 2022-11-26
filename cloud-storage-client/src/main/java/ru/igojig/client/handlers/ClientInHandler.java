@@ -5,10 +5,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.igojig.common.CloudUtil;
+import ru.igojig.common.protocol.ProtocolUtils;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
-import ru.igojig.common.callback.CloudCallback;
+import ru.igojig.common.callback.ProtoCallback;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -25,7 +25,7 @@ import java.util.Map;
 public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger= LogManager.getLogger(ClientInHandler.class);
-    private Map<String, CloudCallback> cloudCallbackMap;
+    private Map<String, ProtoCallback> cloudCallbackMap;
     private HandlerState currentState = HandlerState.IDLE;
     private int nextLength; // длина следующей получаемой части
     private long fileLength;
@@ -40,7 +40,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
     }
 
 
-    public void setCloudCallbackMap(Map<String, CloudCallback> map) {
+    public void setCloudCallbackMap(Map<String, ProtoCallback> map) {
         this.cloudCallbackMap = map;
     }
 
@@ -176,7 +176,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
 
                             // получили файл
                             // передаем клиенту список файлов
-                            CloudUtil.sendFileListInDir(rootPath, ctx.channel(), f -> {
+                            ProtocolUtils.sendFileListInDir(rootPath, ctx.channel(), f -> {
                                 if (!f.isSuccess()) {
                                     logger.throwing(f.cause());
                                 }
@@ -215,9 +215,8 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
                     if (str.equals("")) {
                         fileList = Collections.emptyList();
                     } else {
-                        String[] fileString = str.split(CloudUtil.STRING_DELIMITER);
+                        String[] fileString = str.split(ProtocolUtils.TOKEN_DELIMITER);
                         fileList = Arrays.stream(fileString).toList();
-
                     }
                     // ищем callback и вызываем его
                     cloudCallbackMap.get("GET_FILE_LIST").callback(fileList);

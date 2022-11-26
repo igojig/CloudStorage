@@ -6,11 +6,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.igojig.common.CloudUtil;
 import ru.igojig.common.Command;
 import ru.igojig.common.HandlerState;
 import ru.igojig.common.Header;
 import ru.igojig.common.fileutils.FileUtils;
+import ru.igojig.common.protocol.ProtocolUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -36,7 +36,8 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
     private String fileName;
     private BufferedOutputStream out;
     Path rootPath = Path.of(".", "server_repository");
-    DecimalFormat decimalFormat=new DecimalFormat();
+    DecimalFormat decimalFormat = new DecimalFormat();
+
     {
         decimalFormat.setGroupingSize(3);
     }
@@ -57,7 +58,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Пользователь " + username + " отключился. " + ctx);
+        logger.warn("Пользователь " + username + " отключился. " + ctx);
         ctx.close();
 
 //        super.channelInactive(ctx);
@@ -136,7 +137,8 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                     // получили файл
                     // передаем клиенту список файлов
                     sendFileListToClient(ctx.channel());
-                } else {
+                }
+                else {
                     while (buf.readableBytes() > 0) {
                         byte readed = buf.readByte();
                         out.write(readed);
@@ -169,7 +171,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                 if (buf.readableBytes() >= nextLength) {
                     byte[] bytes = new byte[nextLength];
                     buf.readBytes(bytes);
-                    String[] fileList = new String(bytes, StandardCharsets.UTF_8).split(CloudUtil.STRING_DELIMITER);
+                    String[] fileList = new String(bytes, StandardCharsets.UTF_8).split(ProtocolUtils.TOKEN_DELIMITER);
                     logger.info("Получили список файлов от клиента");
                     logger.trace(Arrays.toString(fileList));
                     currentState = HandlerState.IDLE;
@@ -247,7 +249,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                     byte[] bytes = new byte[nextLength];
                     buf.readBytes(bytes);
                     // формат: старое_имя & новое_имя
-                    String[] str = new String(bytes, StandardCharsets.UTF_8).split(CloudUtil.STRING_DELIMITER);
+                    String[] str = new String(bytes, StandardCharsets.UTF_8).split(ProtocolUtils.TOKEN_DELIMITER);
                     String oldName = str[0];
                     String newName = str[1];
                     Path pathOld = rootPath.resolve(oldName);
@@ -278,14 +280,15 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                     String filename = new String(bytes, StandardCharsets.UTF_8);
                     currentState = HandlerState.IDLE;
                     Path path = rootPath.resolve(filename);
-                    CloudUtil.sendFile(path, ctx.channel(), f -> {
-                        if (!f.isSuccess()) {
-                            logger.throwing(f.cause());
-                        }
-                        if (f.isSuccess()) {
-                            logger.info("Файл: " + path.getFileName() + " передан на клиент");
-                        }
-                    });
+                    ProtocolUtils.sendFile(path, ctx.channel(),
+                            f -> {
+                                if (!f.isSuccess()) {
+                                    logger.throwing(f.cause());
+                                }
+                                if (f.isSuccess()) {
+                                    logger.info("Файл: " + path.getFileName() + " передан на клиент");
+                                }
+                            }, null);
                 }
             }
 
@@ -305,7 +308,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
     }
 
     private void sendFileListToClient(Channel channel) {
-        CloudUtil.sendFileListInDir(rootPath, channel, f -> {
+        ProtocolUtils.sendFileListInDir(rootPath, channel, f -> {
             if (!f.isSuccess()) {
                 logger.throwing(f.cause());
             }

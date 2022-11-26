@@ -1,4 +1,4 @@
-package ru.igojig.client;
+package ru.igojig.client.Network;
 
 
 import io.netty.bootstrap.Bootstrap;
@@ -12,7 +12,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.igojig.client.handlers.ClientInHandler;
-import ru.igojig.common.CloudUtil;
+import ru.igojig.common.protocol.ProtocolUtils;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -41,7 +41,7 @@ public class Network {
             Bootstrap clientBootstrap = new Bootstrap();
             clientBootstrap.group(group)
                     .channel(NioSocketChannel.class)
-                    .remoteAddress(new InetSocketAddress(CloudUtil.HOST, CloudUtil.PORT))
+                    .remoteAddress(new InetSocketAddress(ProtocolUtils.HOST, ProtocolUtils.PORT))
                     .handler(new ChannelInitializer<SocketChannel>() {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast( new ClientInHandler());
@@ -67,5 +67,6 @@ public class Network {
 
     public void stop() {
         currentChannel.close();
+        logger.info("Сетевое соединение закрыто");
     }
 }
