@@ -73,6 +73,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                 byte controlByte = buf.readByte();
                 // проверяем заголовок, исходя из него выставляем HandlerState
                 if (controlByte == Header.FILE.getHeader()) {
+                    logger.trace(Header.FILE);
                     // переходим в состояние получения файла
                     currentState = HandlerState.FILE_NAME_LENGTH;
                     nextLength = 0;
@@ -80,10 +81,12 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                     receivedFileLength = 0L;
                     fileName = null;
                 } else if (controlByte == Header.FILE_LIST.getHeader()) {
+                    logger.trace(Header.FILE_LIST);
                     // переходим в состояние получения списка файлов с клиента
                     currentState = HandlerState.FILE_LIST_LENGTH;
                     nextLength = 0;
                 } else if (controlByte == Header.COMMAND.getHeader()) {
+                    logger.trace(Header.COMMAND);
                     // переходим в состояние получения команды от клиента
                     currentState = HandlerState.COMMAND;
                 } else {
@@ -228,9 +231,14 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                     buf.readBytes(bytes);
                     String fileToDelete = new String(bytes, StandardCharsets.UTF_8);
                     Path path = rootPath.resolve(fileToDelete);
-                    logger.info("Удаляем файл: " + path);
                     currentState = HandlerState.IDLE;
-                    Files.delete(path);
+                    try {
+                        Files.delete(path);
+                        logger.info("Удалили файл: " + path);
+                    }
+                    catch (IOException e){
+                        logger.throwing(e);
+                    }
                     sendFileListToClient(ctx.channel());
                 }
             }
