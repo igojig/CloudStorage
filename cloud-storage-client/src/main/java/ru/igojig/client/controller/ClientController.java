@@ -226,14 +226,13 @@ public class ClientController implements Initializable {
 
                     }
                 },
-                (a, b) -> Platform.runLater(()->updateProgressBar(a, b)));
+                (partLength, fullLength) -> Platform.runLater(()->updateProgressBar(partLength, fullLength)));
     }
 
     public void onSendToClient(ActionEvent actionEvent) {
         if (checkServerFileIsSelected()) {
             return;
         }
-
 
         ProtocolUtils.sendCommandGetFile(selectedServerFile, Network.getInstance().getCurrentChannel(), future -> {
             if (!future.isSuccess()) {
@@ -242,8 +241,6 @@ public class ClientController implements Initializable {
             if (future.isSuccess()) {
                 logger.info("Отправлен запрос на файл: " + selectedServerFile);
                 Platform.runLater(() -> txtMessage.appendText("Отправлен запрос на файл: " + selectedServerFile + "\n"));
-
-
             }
         });
     }

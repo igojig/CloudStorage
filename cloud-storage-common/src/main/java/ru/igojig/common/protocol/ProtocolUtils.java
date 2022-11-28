@@ -20,23 +20,16 @@ public class ProtocolUtils {
     public static final int PORT = 8189;
     public static final int COPY_BUFFER_SIZE = 8192;
 
-
-
      public static void sendFileListInDir(Path path, Channel channel, ChannelFutureListener finishListener) {
-
         ByteBuf buf = null;
-
         List<String> fileList = FileUtils.getFileListInDir(path);
         String strFileList = String.join(ProtocolUtils.TOKEN_DELIMITER, fileList);
         byte[] bytesStr = strFileList.getBytes(StandardCharsets.UTF_8);
-
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + bytesStr.length);
-
         buf.writeByte(Header.FILE_LIST.getHeader());
-
         buf.writeInt(bytesStr.length);
-
         buf.writeBytes(bytesStr);
+
         ChannelFuture transferOperationFuture = channel.writeAndFlush(buf);
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
@@ -60,24 +53,16 @@ public class ProtocolUtils {
 
         ByteBuf buf = null;
         byte[] filenameBytes = path.getFileName().toString().getBytes(StandardCharsets.UTF_8);
-
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + filenameBytes.length + 8);
         // пишем байт заголовка
         buf.writeByte((byte) Header.FILE.getHeader());
-
-
         // пишем длину имени файла
         buf.writeInt(filenameBytes.length);
-
         // пишем имя файла
         buf.writeBytes(filenameBytes);
-//        channel.write(buf);
-
         // пишем длину самого файла
         buf.writeLong(Files.size(path));
         channel.write(buf);
-
-
         // пишем сам файл
         ChannelFuture transferOperationFuture = channel.writeAndFlush(region, channel.newProgressivePromise());
 
@@ -102,20 +87,13 @@ public class ProtocolUtils {
 
      public static void sendCommandGetFile(String filename, Channel channel, ChannelFutureListener finishListener) {
         ByteBuf buf = null;
-
         byte[] filenameBytes = filename.getBytes(StandardCharsets.UTF_8);
-
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 1 + 4 + filenameBytes.length);
-
         buf.writeByte(Header.COMMAND.getHeader());
-
-//        buf = ByteBufAllocator.DEFAULT.directBuffer(1);
         buf.writeByte(Command.GET_FILE.getCommand());
-
-
         buf.writeInt(filenameBytes.length);
-
         buf.writeBytes(filenameBytes);
+
         ChannelFuture transferOperationFuture = channel.writeAndFlush(buf);
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
@@ -124,18 +102,15 @@ public class ProtocolUtils {
 
     public static void sendCommandRenameFile(String oldName, String newName, Channel channel, ChannelFutureListener finishListener) {
         ByteBuf buf = null;
-        String strBody = oldName + ProtocolUtils.TOKEN_DELIMITER + newName;
-        byte[] bytes = strBody.getBytes(StandardCharsets.UTF_8);
+        String strCommand = oldName + ProtocolUtils.TOKEN_DELIMITER + newName;
+        byte[] bytes = strCommand.getBytes(StandardCharsets.UTF_8);
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 1 + 4 + bytes.length);
         buf.writeByte(Header.COMMAND.getHeader());
-
         buf.writeByte(Command.RENAME.getCommand());
-
-
         buf.writeInt(bytes.length);
-
         buf.writeBytes(bytes);
+
         ChannelFuture transferOperationFuture = channel.writeAndFlush(buf);
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
@@ -148,24 +123,20 @@ public class ProtocolUtils {
 
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 1 + 4 + bytes.length);
         buf.writeByte(Header.COMMAND.getHeader());
-
         buf.writeByte(Command.DELETE.getCommand());
-
         buf.writeInt(bytes.length);
-
         buf.writeBytes(bytes);
+
         ChannelFuture transferOperationFuture = channel.writeAndFlush(buf);
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
         }
-
     }
 
      public static void sendAuth(String login, String password, Channel channel, ChannelFutureListener finishListener) {
         ByteBuf buf = null;
         String authStr = login + ProtocolUtils.TOKEN_DELIMITER + password;
         byte[] authBytes = authStr.getBytes(StandardCharsets.UTF_8);
-
         buf = ByteBufAllocator.DEFAULT.directBuffer(1 + 4 + authBytes.length);
 
         buf.writeByte(Header.AUTH_REQUEST.getHeader());
@@ -176,7 +147,6 @@ public class ProtocolUtils {
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
         }
-
     }
 
      public static void sendAuthOk(String username, Channel channel, ChannelFutureListener finishListener) {
@@ -203,8 +173,5 @@ public class ProtocolUtils {
         if (finishListener != null) {
             transferOperationFuture.addListener(finishListener);
         }
-
     }
-
-
 }

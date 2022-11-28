@@ -73,7 +73,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                 byte controlByte = buf.readByte();
                 // проверяем заголовок, исходя из него выставляем HandlerState
                 if (controlByte == Header.FILE.getHeader()) {
-                    logger.trace(Header.FILE);
+                    logger.info(Header.FILE);
                     // переходим в состояние получения файла
                     currentState = HandlerState.FILE_NAME_LENGTH;
                     nextLength = 0;
@@ -81,12 +81,12 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
                     receivedFileLength = 0L;
                     fileName = null;
                 } else if (controlByte == Header.FILE_LIST.getHeader()) {
-                    logger.trace(Header.FILE_LIST);
+                    logger.info(Header.FILE_LIST);
                     // переходим в состояние получения списка файлов с клиента
                     currentState = HandlerState.FILE_LIST_LENGTH;
                     nextLength = 0;
                 } else if (controlByte == Header.COMMAND.getHeader()) {
-                    logger.trace(Header.COMMAND);
+                    logger.info(Header.COMMAND);
                     // переходим в состояние получения команды от клиента
                     currentState = HandlerState.COMMAND;
                 } else {

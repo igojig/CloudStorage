@@ -19,7 +19,8 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger=LogManager.getLogger(AuthInHandler.class);
 
-    private static Set<String> userSet = new HashSet<>();
+    // username уникален по структуре БД
+    private static final Set<String> userSet = new HashSet<>();
 
     enum AuthStatus {
         AUTH,
@@ -27,11 +28,8 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
     }
 
     private AuthStatus authStatus = AuthStatus.AUTH_NOT;
-
     private final AuthCallback authCallback;
-
     private HandlerState currentState = HandlerState.IDLE;
-
     private int nextLength;
     String username = null;
 
@@ -88,6 +86,7 @@ public class AuthInHandler extends ChannelInboundHandlerAdapter {
 
                         // получаем пользователя через callback
                         Optional<String> optUser = authCallback.authCallback(login, password);
+
                         if (optUser.isPresent()) {
                             username = optUser.get();
                             // проверка - залогинен ли уже пользователь

@@ -72,23 +72,17 @@ public class FileUtils {
         try (Stream<Path> stream = Files.list(path)) {
             return stream
                     .filter(p -> !Files.isDirectory(p))
-//                    .filter(p-> {
-//                        try {
-//                            return !Files.isHidden(p);
-//                        } catch (IOException e) {
-//                            throw new RuntimeException(e);
-//                        }
-//                    })
+//                    .filter(p-> Files.isHidden(p))
                     .map(p -> p.getFileName().toString())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(e);
             return Collections.emptyList();
         }
-
     }
 
     public static void stopExecutor(){
+        logger.trace("Shutting down executor");
         executorService.shutdown();
     }
 }
