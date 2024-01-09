@@ -56,7 +56,6 @@ public class Network {
         } catch (InterruptedException e) {
             logger.throwing(e);
         } finally {
-
             try {
                 group.shutdownGracefully().sync();
             } catch (InterruptedException e) {

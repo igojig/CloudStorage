@@ -1,6 +1,5 @@
-module cloud.storage.common {
+module ru.igojig.cloud.common {
     requires io.netty.all;
-
 
     requires jdk.unsupported;
     requires org.apache.logging.log4j;

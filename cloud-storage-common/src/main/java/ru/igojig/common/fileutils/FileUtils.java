@@ -26,7 +26,7 @@ public class FileUtils {
     synchronized public static boolean createUserDir(Path path, ProtoCallback protoCallback) {
         if (!Files.exists(path)) {
             try {
-                Files.createDirectory(path);
+                Files.createDirectories(path);
                 protoCallback.callback("Создали директорию пользователя: " + path);
                 return true;
             } catch (IOException e) {
@@ -43,11 +43,10 @@ public class FileUtils {
         executorService.execute(()->{
             try(FileInputStream fis=new FileInputStream(externalFile.toFile());
                 BufferedInputStream bis=new BufferedInputStream(fis);
-
                 FileOutputStream fos=new FileOutputStream(localFile.toFile());
                 BufferedOutputStream bos=new BufferedOutputStream(fos)) {
-
                 long length=Files.size(externalFile);
+
 
                 int read=0;
                 long readedBytes=0;

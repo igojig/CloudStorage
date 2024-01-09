@@ -15,4 +15,10 @@
       <module name="demoFX" target="17" />
     </bytecodeTargetLevel>
   </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="cloud-storage-client" options="" />
+      <module name="cloud-storage-server" options="" />
+    </option>
+  </component>
 </project>

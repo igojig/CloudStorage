@@ -30,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
     public void openConnection() {
         String connectionStr = "jdbc:sqlite:";
 
-        URL url = AuthServiceImpl.class.getResource("cloud_users.db");
+        URL url = AuthServiceImpl.class.getResource("/cloud_users.db");
         if(url!=null) {
             String databaseStr = url.toString();
             connectionStr += databaseStr;

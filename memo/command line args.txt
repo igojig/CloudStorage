@@ -3,3 +3,8 @@ java.base/jdk.internal.misc=io.netty.all
 --add-opens
 java.base/java.nio=io.netty.all
 -Dio.netty.tryReflectionSetAccessible=true
+
+
+mvn javafx:run  -pl cloud-storage-client
+mvn exec:java -pl cloud-storage-server
+

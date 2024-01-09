@@ -1,9 +1,9 @@
-module cloud.storage.client {
+module ru.igojig.cloud.client {
     requires javafx.controls;
     requires javafx.fxml;
     requires io.netty.all;
 
-    requires cloud.storage.common;
+    requires ru.igojig.cloud.common;
 
     requires jdk.unsupported;
     requires org.apache.logging.log4j;
@@ -16,7 +16,5 @@ module cloud.storage.client {
     opens ru.igojig.client.controller to javafx.fxml;
     opens ru.igojig.client.Network to javafx.fxml;
     exports ru.igojig.client.Network;
-
-
 
 }

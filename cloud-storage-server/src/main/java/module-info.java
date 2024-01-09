@@ -1,4 +1,4 @@
-module cloud.storage.server {
+module ru.igojig.cloud.server {
 
 //    requires cloud.storage.common;
 
@@ -7,7 +7,8 @@ module cloud.storage.server {
     requires io.netty.all;
 
     requires org.xerial.sqlitejdbc;
-    requires cloud.storage.common;
+//    requires cloud.storage.common;
+    requires ru.igojig.cloud.common;
     requires org.apache.logging.log4j;
     exports ru.igojig.server;
     exports ru.igojig.server.handlers;

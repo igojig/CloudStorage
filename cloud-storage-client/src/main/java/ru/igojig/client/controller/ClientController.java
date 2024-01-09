@@ -83,7 +83,7 @@ public class ClientController implements Initializable {
     String selectedClientFile;
     String selectedServerFile;
 
-    Path rootClientPath = Path.of(".", "client_repository");
+    Path rootClientPath = Path.of("./", "client_repository");
 
 
     @Override
@@ -226,7 +226,7 @@ public class ClientController implements Initializable {
 
                     }
                 },
-                (partLength, fullLength) -> Platform.runLater(()->updateProgressBar(partLength, fullLength)));
+                (partLength, fullLength) -> Platform.runLater(() -> updateProgressBar(partLength, fullLength)));
     }
 
     public void onSendToClient(ActionEvent actionEvent) {
@@ -449,6 +449,10 @@ public class ClientController implements Initializable {
 
         // добавляем в rootPath имя пользователя
         rootClientPath = rootClientPath.resolve(username);
+        rootClientPath = rootClientPath.normalize();
+
+//        System.out.println(rootClientPath.toAbsolutePath());
+
         FileUtils.createUserDir(rootClientPath, (obj) -> {
             Platform.runLater(() -> txtMessage.appendText((String) obj[0] + "\n"));
             logger.info((String) obj[0]);
@@ -480,7 +484,7 @@ public class ClientController implements Initializable {
             Platform.runLater(() -> updateClientFileListWithFileInfo((String) obj[0], (Long) obj[1]));
         };
 
-        ProgressBarAction setProgress = (part, fullLength)-> {
+        ProgressBarAction setProgress = (part, fullLength) -> {
             Platform.runLater(() -> this.updateProgressBar(part, fullLength));
         };
 
