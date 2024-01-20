@@ -83,7 +83,7 @@ public class ClientController implements Initializable {
     String selectedClientFile;
     String selectedServerFile;
 
-    Path rootClientPath = Path.of("./", "client_repository");
+    Path rootClientPath = Path.of(".", "client_repository");
 
 
     @Override

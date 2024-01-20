@@ -24,9 +24,11 @@ public class FileUtils {
     private static final ExecutorService executorService= Executors.newSingleThreadExecutor();
 
     synchronized public static boolean createUserDir(Path path, ProtoCallback protoCallback) {
+        System.out.println(path.toAbsolutePath());
         if (!Files.exists(path)) {
             try {
                 Files.createDirectories(path);
+
                 protoCallback.callback("Создали директорию пользователя: " + path);
                 return true;
             } catch (IOException e) {

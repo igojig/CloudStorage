@@ -81,6 +81,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>ru.igojig.cloud.client/ru.igojig.client.ClientApp</mainClass>
+                            <workingDirectory>${project.parent.basedir}</workingDirectory>
                             <options>
                                 <option>-Dio.netty.tryReflectionSetAccessible=true</option>
                                 <option>--add-opens</option>

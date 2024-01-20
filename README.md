@@ -1,5 +1,40 @@
-# CloudStorage
-## Облачное хранилище  - учебный проект GeekBrains
+![Static Badge](https://img.shields.io/badge/Java-17-blue)
+![Static Badge](https://img.shields.io/badge/Netty-yellow)
+![Static Badge](https://img.shields.io/badge/JavaFX-17-blue)
+![Static Badge](https://img.shields.io/badge/Log4j-blue)
+![Static Badge](https://img.shields.io/badge/Sqlite-blue)
+![Static Badge](https://img.shields.io/badge/Maven-blue)
+
+## CloudStorage
+Облачное хранилище - учебный проект GeekBrains
+
+Многомодульный проект, представляющий собой упрощенную систему облачного хранения пользовательских файлов
+
+Написан с использованием фреймворков `Netty` (сервер/клиент) и `JavaFX` (клиент)
+
+![demo](./github-assets/demo.mp4)
+
+### Состав проекта
+
+  - `cloud-storage-client` - клиентская часть
+  - `cloud-storage-server` - серверная часть
+  - `cloud-storage-common` - совместно используемые библиотеки
+### Основные возможности
+ - аутентификация пользователей
+ - копирование файлов между клиентом и сервером
+ - отображение прогресса при копировании
+ - отображение списка файлов
+ - удаление файлов
+ - переименование файлов
+ - ведение логов
+
+
+
+### Реализованные задачи
+ - разработал протокол передачи файлов с использованием фреймворка `Netty`
+ - разработал графический интерфейс клиента
+ - 
+
 
 - **Login/password:** 1/1, 2/2, 3/3, 4/4
 

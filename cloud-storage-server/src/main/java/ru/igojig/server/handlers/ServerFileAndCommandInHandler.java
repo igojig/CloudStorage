@@ -46,6 +46,7 @@ public class ServerFileAndCommandInHandler extends ChannelInboundHandlerAdapter 
         this.username = username;
         // добавляем в rootPath имя пользователя
         rootPath = rootPath.resolve(username);
+        rootPath=rootPath.normalize();
         FileUtils.createUserDir(rootPath, obj -> logger.info((String) obj[0]));
     }
 
