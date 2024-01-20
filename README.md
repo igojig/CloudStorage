@@ -12,7 +12,7 @@
 
 Написан с использованием фреймворков `Netty` (сервер/клиент) и `JavaFX` (клиент)
 
-![demo](./github-assets/demo.mp4)
+https://github.com/igojig/CloudStorage/github-assets/demo.mp4
 
 ### Состав проекта
 
