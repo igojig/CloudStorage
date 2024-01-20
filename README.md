@@ -14,6 +14,11 @@
 
 https://github.com/igojig/CloudStorage/github-assets/demo.mp4
 
+
+
+https://github.com/igojig/CloudStorage/assets/103119162/b100d97c-32bd-4d96-a7e4-3a56ed7fa68f
+
+
 ### Состав проекта
 
   - `cloud-storage-client` - клиентская часть
