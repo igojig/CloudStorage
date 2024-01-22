@@ -29,9 +29,4 @@ public enum HandlerState {
 
     COMMAND_DELETE_LENGTH,
     COMMAND_DELETE
-
-
-
-
-
 }

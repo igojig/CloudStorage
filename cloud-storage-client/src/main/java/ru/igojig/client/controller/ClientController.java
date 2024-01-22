@@ -7,10 +7,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,7 +102,9 @@ public class ClientController implements Initializable {
         serverObservableList.addListener((ListChangeListener<String>) c -> lblServerCount.setText(String.valueOf(serverObservableList.size())));
         clientObservableList.addListener((ListChangeListener<String>) c -> lblClientCount.setText(String.valueOf(clientObservableList.size())));
 
-        hideblePanes.forEach(o -> o.setVisible(false));
+        hideblePanes.forEach(o -> {
+            o.setVisible(false);
+        });
 
 
 //        updateClientFileList();
@@ -115,7 +114,6 @@ public class ClientController implements Initializable {
         hideblePanes.add(vboxCenter);
         hideblePanes.add(vboxLeft);
         hideblePanes.add(vboxRight);
-
     }
 
     // скрываем кнопки после отправки файлов
